@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ms-ocp-tools-configmap
+  namespace: testing-pmx3
+  labels:
+    app.kubernetes.io/name: ms-ocp-tools
+data:
+  CMS_DB_JDBC_URL: "jdbc:informix-sqli://10.226.0.92:1448/gescab:INFORMIXSERVER=cmt_tcp"
+  CMS_DB_POOL_MAX_SIZE: "5"
+  CMS_DB_ACQUISITION_TIMEOUT: "5S"
+  CMS_DB_LOGIN_TIMEOUT: "5S"
+  CMS_QUERY_TIMEOUT_SECONDS: "5"
+  CMS_POST_REGISTER_UPDATE_DELAY: "1S"
+  TCP_CHECK_TIMEOUT: "10S"
+  SOAP_QUERY_URL: "http://10.4.67.58:10002/Parallelism/queryESb"
+  SOAP_REGISTER_URL: "http://10.4.67.58:10002/Parallelism/createEsb"
+  SOAP_QUERY_TIMEOUT: "5S"
+  SOAP_REGISTER_TIMEOUT: "5S"
+  PMX3_SUBSYSTEM: "DIVPMX2"
+  PMX1_SUBSYSTEM: "DIVPMX1"
+  PMX4_SUBSYSTEM: "DIV01"
+  JSON_LOGS: "true"
+  OCP_MAP_DB_JDBC_URL: "jdbc:postgresql://ms-ocp-tools-postgresql:5432/ocptools"
+  OCP_MAP_DB_POOL_MAX_SIZE: "5"
+  OCP_MAP_DB_ACQUISITION_TIMEOUT: "5S"
+  OCP_MAP_DB_RETRY: "30S"
+  OCP_MAP_NAMESPACES: "agendador-test,diagnosticador-test,pmx-test,security-test,testing,testing-diversificacion,testing-matrix,testing-pmx1,testing-pmx2,testing-pmx3,testing-pmx4"
+  OCP_MAP_VISIBLE_NAMESPACES: "agendador-test,diagnosticador-test,pmx-test,security-test,testing,testing-diversificacion,testing-matrix,testing-pmx1,testing-pmx2,testing-pmx3,testing-pmx4"
+  OCP_MAP_SCAN_INTERVAL: "5s"
+  OCP_MAP_SCAN_INITIAL_DELAY: "3s"
+  OCP_API_CONNECTION_TIMEOUT: "5S"
+  OCP_API_REQUEST_TIMEOUT: "5S"
+  OCP_CONSOLE_BASE_URL: "https://console-openshift-console.apps.ocpnprod7.gp.inet"
+  # Catálogo revisado y muestra manual validada el 2026-09-24.
+  EXTERNAL_MONITOR_ENABLED: "true"
+  EXTERNAL_MONITOR_TLS_VERIFY: "false"
+  EXTERNAL_MONITOR_INTERVAL: "10m"
+  EXTERNAL_MONITOR_INITIAL_DELAY: "30s"
+  EXTERNAL_MONITOR_PARALLELISM: "4"
+  EXTERNAL_ADMIN_SESSION_DURATION: "15m"
+  EXTERNAL_ADMIN_MAX_FAILURES: "5"
+  EXTERNAL_ADMIN_FAILURE_WINDOW: "5m"
+  EXTERNAL_ADMIN_BLOCK_DURATION: "15m"

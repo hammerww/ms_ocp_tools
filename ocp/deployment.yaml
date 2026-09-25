@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-ocp-tools
+  namespace: testing-pmx3
+  labels:
+    app.kubernetes.io/name: ms-ocp-tools
+    app.kubernetes.io/part-of: ocp-tools
+spec:
+  # Una sola réplica mientras createEsb no tenga una restricción única confirmada.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ms-ocp-tools
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ms-ocp-tools
+        app.kubernetes.io/part-of: ocp-tools
+    spec:
+      serviceAccountName: ms-ocp-tools
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: ms-ocp-tools
+          # El servidor publica por la Route externa; los pods consumen por el registry interno.
+          image: image-registry.openshift-image-registry.svc:5000/testing-pmx3/ms-ocp-tools:0.7.2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: ms-ocp-tools-configmap
+            - secretRef:
+                name: tools
+          env:
+            - name: OCP_MAP_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ms-ocp-tools-postgresql
+                  key: POSTGRESQL_USER
+            - name: OCP_MAP_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ms-ocp-tools-postgresql
+                  key: POSTGRESQL_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault

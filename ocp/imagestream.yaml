@@ -1,0 +1,9 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: ms-ocp-tools
+  namespace: testing-pmx3
+  labels:
+    app.kubernetes.io/name: ms-ocp-tools
+    app.kubernetes.io/part-of: ocp-tools
+

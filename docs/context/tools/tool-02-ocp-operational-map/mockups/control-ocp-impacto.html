@@ -1,0 +1,1452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Control OCP · Escenarios e impacto</title>
+<style>:root{color-scheme:light dark;background:light-dark(rgb(255 255 255), rgb(24 24 24))}html,body{margin:0}body{box-sizing:border-box;padding:1rem;background:inherit}iframe{display:block;width:100%;height:calc(100vh - 2rem);margin:0 auto;border:0}</style>
+</head>
+<body>
+<iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="Control OCP · Escenarios e impacto" srcdoc="&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;meta name=&quot;referrer&quot; content=&quot;no-referrer&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; script-src &#x27;unsafe-inline&#x27; &#x27;unsafe-eval&#x27; &#x27;wasm-unsafe-eval&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src &#x27;unsafe-inline&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;&quot;&gt;
+&lt;title&gt;Control OCP · Escenarios e impacto&lt;/title&gt;
+&lt;style&gt;:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, &quot;Segoe UI&quot;, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;,
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --radius: var(--border-radius-lg, 12.5px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url(&quot;data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 17 17&#x27;%3E%3Cpath d=&#x27;M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z&#x27;/%3E%3C/svg%3E&quot;);
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme=&quot;light&quot;] {
+  color-scheme: light;
+}
+
+:root[data-theme=&quot;dark&quot;] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html &gt; body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: 5px;
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive &gt; .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align=&quot;right&quot;]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align=&quot;center&quot;]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: superellipse(1.5);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget &gt; :not(.card, .progress) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress {
+  display: flex;
+  height: 6px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+.progress-bar {
+  height: 100%;
+  flex-shrink: 0;
+  border: 0;
+  background: var(--viz-series-1);
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls &gt; .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls &gt; .form-label &gt; :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type=&quot;file&quot;] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type=&quot;file&quot;]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type=&quot;file&quot;]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type=&quot;color&quot;] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: superellipse(1.5);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: &quot;&quot;;
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type=&quot;radio&quot;] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type=&quot;radio&quot;]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: &quot;&quot;;
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+  [aria-pressed=&quot;true&quot;],
+  [aria-selected=&quot;true&quot;],
+  .is-selected
+) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed=&quot;true&quot;], [aria-selected=&quot;true&quot;], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget &gt; svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: 16px !important;
+  height: 16px !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html&gt;body{padding:0}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;ocpImpactMock&quot;&gt;
+  &lt;style&gt;
+    #ocpImpactMock {
+      color-scheme: light dark;
+      --im-bg: light-dark(#f3f5f2, #111713);
+      --im-surface: light-dark(#ffffff, #19211c);
+      --im-soft: light-dark(#edf3ef, #202a24);
+      --im-text: light-dark(#17221c, #edf4ef);
+      --im-muted: light-dark(#67736c, #aab8af);
+      --im-line: light-dark(#d6ddd8, #344039);
+      --im-brand: light-dark(#116b55, #78d7b5);
+      --im-brand-soft: light-dark(#dff2e9, #183b2f);
+      --im-blue-soft: light-dark(#e6f4ff, #172f3f);
+      --im-blue-text: light-dark(#285b7c, #acd8f5);
+      --im-on: light-dark(#14734d, #68d49f);
+      --im-on-soft: light-dark(#e4f5ec, #193a2b);
+      --im-off: light-dark(#9a421f, #f1a37f);
+      --im-off-soft: light-dark(#fff0e9, #40251d);
+      --im-test: light-dark(#8a6200, #f0c35a);
+      --im-test-soft: light-dark(#fff6d9, #3d3219);
+      width: 100%;
+      overflow: hidden;
+      background: var(--im-bg);
+      color: var(--im-text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;
+    }
+    #ocpImpactMock * { box-sizing: border-box; }
+    #ocpImpactMock .im-window { width: 100%; min-height: 740px; background: var(--im-bg); }
+    #ocpImpactMock .im-topbar { min-height: 66px; display: flex; align-items: center; gap: 12px; padding: 12px 28px; background: var(--im-surface); border-bottom: 1px solid var(--im-line); }
+    #ocpImpactMock .im-logo { width: 38px; height: 38px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 11px; background: var(--im-text); color: var(--im-surface); font-weight: 500; }
+    #ocpImpactMock .im-product small { display: block; color: var(--im-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; }
+    #ocpImpactMock .im-product strong { display: block; margin-top: 2px; font-weight: 500; }
+    #ocpImpactMock .im-live { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 999px; background: var(--im-test-soft); color: var(--im-test); }
+    #ocpImpactMock .im-live::before { content: &quot;&quot;; width: 7px; height: 7px; border-radius: 50%; background: var(--im-test); }
+    #ocpImpactMock .im-tabs { display: flex; gap: 3px; padding: 0 5%; background: var(--im-surface); border-bottom: 1px solid var(--im-line); }
+    #ocpImpactMock .im-tab { min-height: 48px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--im-muted); font: inherit; cursor: pointer; }
+    #ocpImpactMock .im-tab[aria-selected=&quot;true&quot;] { color: var(--im-brand); border-bottom-color: var(--im-brand); font-weight: 500; }
+    #ocpImpactMock .im-tab-count { min-width: 24px; padding: 2px 6px; border-radius: 999px; background: var(--im-soft); text-align: center; }
+    #ocpImpactMock .im-main { padding: 30px 5% 48px; }
+    #ocpImpactMock .im-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
+    #ocpImpactMock .im-kicker { margin: 0; color: var(--im-brand); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; }
+    #ocpImpactMock h1 { margin: 7px 0; font-weight: 500; }
+    #ocpImpactMock .im-heading-copy &gt; p:last-child { margin: 0; color: var(--im-muted); }
+    #ocpImpactMock .im-mode { color: var(--im-muted); }
+    #ocpImpactMock .im-notice { display: none; margin-top: 18px; padding: 12px 14px; background: var(--im-test-soft); color: var(--im-test); border-left: 3px solid var(--im-test); }
+    #ocpImpactMock .im-notice.is-visible { display: flex; align-items: center; gap: 9px; }
+    #ocpImpactMock .im-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 24px; }
+    #ocpImpactMock .im-filters.is-single { grid-template-columns: minmax(260px, 620px); }
+    #ocpImpactMock .im-field { display: block; }
+    #ocpImpactMock .im-field &gt; span { display: block; margin-bottom: 7px; color: var(--im-muted); }
+    #ocpImpactMock .im-input { min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border: 1px solid var(--im-line); border-radius: 11px; background: var(--im-surface); color: var(--im-muted); }
+    #ocpImpactMock .im-input:focus-within { border-color: var(--im-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--im-brand) 17%, transparent); }
+    #ocpImpactMock .im-input input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--im-text); font: inherit; }
+    #ocpImpactMock .im-input input::placeholder { color: var(--im-muted); opacity: .8; }
+    #ocpImpactMock .im-results-head { min-height: 48px; display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-top: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--im-line); }
+    #ocpImpactMock .im-results-head strong { font-weight: 500; }
+    #ocpImpactMock .im-results-head span { color: var(--im-muted); }
+    #ocpImpactMock .im-list { background: var(--im-surface); }
+    #ocpImpactMock .im-scenario { border-bottom: 1px solid var(--im-line); }
+    #ocpImpactMock .im-scenario-trigger { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: center; padding: 17px 20px; border: 0; background: transparent; color: var(--im-text); text-align: left; cursor: pointer; }
+    #ocpImpactMock .im-scenario-trigger:hover { background: var(--im-soft); }
+    #ocpImpactMock .im-case-id { display: block; margin-bottom: 4px; color: var(--im-brand); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    #ocpImpactMock .im-case-title { display: block; font-weight: 500; }
+    #ocpImpactMock .im-case-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; color: var(--im-muted); }
+    #ocpImpactMock .im-case-meta span + span::before { content: &quot;·&quot;; margin-right: 7px; }
+    #ocpImpactMock .im-chevron { color: var(--im-muted); transition: transform .18s ease; }
+    #ocpImpactMock .im-scenario.is-open .im-chevron { transform: rotate(180deg); }
+    #ocpImpactMock .im-case-detail { display: none; padding: 0 20px 20px; }
+    #ocpImpactMock .im-scenario.is-open .im-case-detail { display: block; }
+    #ocpImpactMock .im-service-table { border-top: 1px solid var(--im-line); }
+    #ocpImpactMock .im-service-row { min-height: 58px; display: grid; grid-template-columns: minmax(230px, 1fr) minmax(145px, .35fr) 58px 84px 112px 112px; gap: 11px; align-items: center; padding: 10px; border-bottom: 1px solid var(--im-line); }
+    #ocpImpactMock .im-service-row.im-service-header { min-height: 40px; color: var(--im-muted); }
+    #ocpImpactMock .im-service-name { min-width: 0; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    #ocpImpactMock .im-service-link { color: var(--im-brand); text-decoration: none; }
+    #ocpImpactMock .im-service-link:hover { text-decoration: underline; }
+    #ocpImpactMock .im-namespace { display: inline-flex; width: fit-content; max-width: 100%; padding: 4px 8px; border-radius: 999px; background: var(--im-blue-soft); color: var(--im-blue-text); overflow-wrap: anywhere; }
+    #ocpImpactMock .im-pods { color: var(--im-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    #ocpImpactMock .im-state { display: inline-flex; align-items: center; gap: 6px; }
+    #ocpImpactMock .im-state::before { content: &quot;&quot;; width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; }
+    #ocpImpactMock .im-state.is-on { color: var(--im-on); }
+    #ocpImpactMock .im-state.is-on::before { background: var(--im-on); }
+    #ocpImpactMock .im-state.is-off { color: var(--im-off); }
+    #ocpImpactMock .im-state.is-off::before { background: var(--im-off); }
+    #ocpImpactMock .im-testing { display: inline-flex; align-items: center; gap: 7px; color: var(--im-muted); cursor: pointer; }
+    #ocpImpactMock .im-testing input { width: 17px; height: 17px; accent-color: var(--im-test); }
+    #ocpImpactMock .im-testing.is-active { color: var(--im-test); font-weight: 500; }
+    #ocpImpactMock .im-ocp-link { min-height: 33px; display: inline-flex; width: fit-content; align-items: center; gap: 6px; padding: 6px 9px; border: 1px solid var(--im-line); border-radius: 8px; background: var(--im-soft); color: var(--im-brand); text-decoration: none; white-space: nowrap; }
+    #ocpImpactMock .im-ocp-link:hover { border-color: var(--im-brand); }
+    #ocpImpactMock .im-testing-note { grid-column: 1 / -1; margin: -3px 0 3px; color: var(--im-test); }
+    #ocpImpactMock .im-unmapped-row,
+    #ocpImpactMock .im-impact-row { border-bottom: 1px solid var(--im-line); }
+    #ocpImpactMock .im-unmapped-main { min-height: 66px; display: grid; grid-template-columns: minmax(260px, 1fr) minmax(145px, .3fr) 80px 112px 112px; gap: 12px; align-items: center; padding: 12px 16px; }
+    #ocpImpactMock .im-unmapped-name { min-width: 0; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    #ocpImpactMock .im-no-flow { color: var(--im-muted); }
+    #ocpImpactMock .im-impact-main { display: grid; grid-template-columns: minmax(0, 1fr) 96px 126px 124px; align-items: center; }
+    #ocpImpactMock .im-impact-trigger { width: 100%; min-height: 70px; display: grid; grid-template-columns: 42px minmax(230px, 1fr) minmax(145px, .3fr) 95px auto; gap: 12px; align-items: center; padding: 12px 10px 12px 16px; border: 0; background: transparent; color: var(--im-text); text-align: left; cursor: pointer; }
+    #ocpImpactMock .im-impact-trigger:hover { background: var(--im-soft); }
+    #ocpImpactMock .im-impact-state { padding: 12px 4px; }
+    #ocpImpactMock .im-impact-test { padding: 12px 16px 12px 4px; }
+    #ocpImpactMock .im-impact-ocp { padding: 12px 16px 12px 0; }
+    #ocpImpactMock .im-rank { color: var(--im-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    #ocpImpactMock .im-impact-count { display: inline-flex; width: fit-content; align-items: baseline; gap: 4px; padding: 5px 9px; border-radius: 999px; background: var(--im-brand-soft); color: var(--im-brand); }
+    #ocpImpactMock .im-impact-count strong { font-weight: 500; }
+    #ocpImpactMock .im-impact-detail { display: none; padding: 0 16px 16px 70px; }
+    #ocpImpactMock .im-impact-row.is-open .im-impact-detail { display: block; }
+    #ocpImpactMock .im-impact-detail strong { font-weight: 500; }
+    #ocpImpactMock .im-affected { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+    #ocpImpactMock .im-affected span { padding: 5px 9px; border-radius: 999px; background: var(--im-soft); color: var(--im-muted); }
+    #ocpImpactMock .im-new-label { display: inline-flex; width: fit-content; margin-top: 6px; padding: 3px 7px; border-radius: 999px; background: var(--im-test-soft); color: var(--im-test); }
+    #ocpImpactMock .im-empty { padding: 42px 18px; text-align: center; color: var(--im-muted); }
+    @media (max-width: 860px) {
+      #ocpImpactMock .im-service-row.im-service-header { display: none; }
+      #ocpImpactMock .im-service-row:not(.im-service-header) { grid-template-columns: minmax(0, 1fr) auto auto; padding-block: 14px; }
+      #ocpImpactMock .im-service-name { grid-column: 1 / -1; }
+      #ocpImpactMock .im-namespace { grid-column: 1; }
+      #ocpImpactMock .im-pods { grid-column: 2; }
+      #ocpImpactMock .im-state { grid-column: 3; }
+      #ocpImpactMock .im-testing { grid-column: 1 / 3; }
+      #ocpImpactMock .im-ocp-link { grid-column: 3; }
+      #ocpImpactMock .im-unmapped-main { grid-template-columns: minmax(0, 1fr) auto auto; }
+      #ocpImpactMock .im-unmapped-name { grid-column: 1 / -1; }
+      #ocpImpactMock .im-no-flow { display: none; }
+      #ocpImpactMock .im-impact-main { grid-template-columns: minmax(0, 1fr) 96px 126px 124px; }
+      #ocpImpactMock .im-impact-trigger { grid-template-columns: 34px minmax(0, 1fr) auto; }
+      #ocpImpactMock .im-impact-trigger .im-namespace { grid-column: 2; }
+      #ocpImpactMock .im-impact-trigger .im-impact-count { grid-column: 3; grid-row: 1 / 3; }
+      #ocpImpactMock .im-impact-trigger .im-chevron { grid-column: 3; grid-row: 3; }
+      #ocpImpactMock .im-impact-detail { padding-left: 50px; }
+    }
+    @media (max-width: 640px) {
+      #ocpImpactMock .im-topbar { padding-inline: 18px; }
+      #ocpImpactMock .im-live { display: none; }
+      #ocpImpactMock .im-tabs { padding-inline: 8px; overflow-x: auto; }
+      #ocpImpactMock .im-tab { white-space: nowrap; }
+      #ocpImpactMock .im-main { padding-inline: 18px; }
+      #ocpImpactMock .im-heading { align-items: flex-start; flex-direction: column; }
+      #ocpImpactMock .im-filters { grid-template-columns: 1fr; }
+      #ocpImpactMock .im-unmapped-main { grid-template-columns: 1fr auto; }
+      #ocpImpactMock .im-unmapped-main .im-namespace { grid-column: 1; }
+      #ocpImpactMock .im-unmapped-main .im-pods { grid-column: 2; }
+      #ocpImpactMock .im-unmapped-main .im-testing { grid-column: 1; }
+      #ocpImpactMock .im-unmapped-main .im-ocp-link { grid-column: 2; }
+      #ocpImpactMock .im-impact-main { grid-template-columns: 1fr; }
+      #ocpImpactMock .im-impact-state { padding: 8px 18px; }
+      #ocpImpactMock .im-impact-test { padding: 8px 18px; }
+      #ocpImpactMock .im-impact-ocp { padding: 0 18px 14px; }
+    }
+  &lt;/style&gt;
+
+  &lt;div class=&quot;im-window&quot;&gt;
+    &lt;header class=&quot;im-topbar&quot;&gt;
+      &lt;div class=&quot;im-logo&quot;&gt;OC&lt;/div&gt;
+      &lt;div class=&quot;im-product&quot;&gt;&lt;small&gt;CERTIFICACIÓN&lt;/small&gt;&lt;strong&gt;Mapa operativo OCP&lt;/strong&gt;&lt;/div&gt;
+      &lt;span id=&quot;imLiveTesting&quot; class=&quot;im-live&quot;&gt;&lt;/span&gt;
+    &lt;/header&gt;
+    &lt;nav class=&quot;im-tabs&quot; aria-label=&quot;Vistas principales&quot; role=&quot;tablist&quot;&gt;
+      &lt;button class=&quot;im-tab&quot; type=&quot;button&quot; role=&quot;tab&quot; data-view=&quot;cases&quot;&gt;&lt;i data-lucide=&quot;list-checks&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;Casos de prueba &lt;span id=&quot;imCasesCount&quot; class=&quot;im-tab-count&quot;&gt;&lt;/span&gt;&lt;/button&gt;
+      &lt;button class=&quot;im-tab&quot; type=&quot;button&quot; role=&quot;tab&quot; data-view=&quot;unmapped&quot;&gt;&lt;i data-lucide=&quot;sparkles&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;Sin flujo &lt;span id=&quot;imUnmappedCount&quot; class=&quot;im-tab-count&quot;&gt;&lt;/span&gt;&lt;/button&gt;
+      &lt;button class=&quot;im-tab&quot; type=&quot;button&quot; role=&quot;tab&quot; data-view=&quot;impact&quot;&gt;&lt;i data-lucide=&quot;activity&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;Impacto al apagar &lt;span id=&quot;imImpactCount&quot; class=&quot;im-tab-count&quot;&gt;&lt;/span&gt;&lt;/button&gt;
+    &lt;/nav&gt;
+    &lt;main class=&quot;im-main&quot;&gt;
+      &lt;div id=&quot;imHeading&quot; class=&quot;im-heading&quot;&gt;&lt;/div&gt;
+      &lt;div id=&quot;imNotice&quot; class=&quot;im-notice&quot; role=&quot;status&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
+      &lt;div id=&quot;imFilters&quot;&gt;&lt;/div&gt;
+      &lt;div id=&quot;imResultsHead&quot; class=&quot;im-results-head&quot;&gt;&lt;/div&gt;
+      &lt;div id=&quot;imContent&quot; class=&quot;im-list&quot;&gt;&lt;/div&gt;
+    &lt;/main&gt;
+  &lt;/div&gt;
+
+  &lt;script&gt;
+    (() =&gt; {
+      const root = document.getElementById(&#x27;ocpImpactMock&#x27;);
+      const services = [
+        { id:&#x27;scoring&#x27;, ns:&#x27;testing&#x27;, name:&#x27;ms-integracion-scoringburo&#x27;, pods:1, testing:false, cases:[&#x27;CP-001&#x27;,&#x27;CP-002&#x27;] },
+        { id:&#x27;validate&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-ocp-integracion-validateaddress-camel&#x27;, pods:1, testing:true, testingBy:&#x27;Equipo FTTH&#x27;, cases:[&#x27;CP-001&#x27;,&#x27;CP-002&#x27;,&#x27;CP-003&#x27;] },
+        { id:&#x27;address&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-ocp-integracion-addressroute-camel&#x27;, pods:1, testing:false, cases:[&#x27;CP-001&#x27;,&#x27;CP-003&#x27;] },
+        { id:&#x27;serviceability&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-ocp-integracion-checkserviceabilitysystem-camel&#x27;, pods:0, testing:false, cases:[&#x27;CP-001&#x27;,&#x27;CP-002&#x27;,&#x27;CP-003&#x27;,&#x27;CP-004&#x27;] },
+        { id:&#x27;availability&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-ocp-integracion-serviceavailability-camel&#x27;, pods:1, testing:false, cases:[&#x27;CP-001&#x27;,&#x27;CP-002&#x27;,&#x27;CP-003&#x27;] },
+        { id:&#x27;appointment&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-ocp-integracion-retrieveavailableappointmentsv1-camel&#x27;, pods:1, testing:true, testingBy:&#x27;Certificación Averías&#x27;, cases:[&#x27;CP-001&#x27;,&#x27;CP-002&#x27;,&#x27;CP-003&#x27;,&#x27;CP-005&#x27;] },
+        { id:&#x27;daa&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-ocp-integracion-designandassignresourcesv1-camel&#x27;, pods:1, testing:false, cases:[&#x27;CP-001&#x27;,&#x27;CP-002&#x27;,&#x27;CP-003&#x27;] },
+        { id:&#x27;pangea&#x27;, ns:&#x27;testing&#x27;, name:&#x27;ms-integracion-geographicsitepangea-camel&#x27;, pods:1, testing:false, cases:[&#x27;CP-002&#x27;] },
+        { id:&#x27;matrix-catalog&#x27;, ns:&#x27;testing-matrix&#x27;, name:&#x27;ms-ocp-integracion-matrix-productcatalog-camel&#x27;, pods:1, testing:false, cases:[&#x27;CP-004&#x27;] },
+        { id:&#x27;matrix-status&#x27;, ns:&#x27;testing-matrix&#x27;, name:&#x27;ms-ocp-matrix-changeproductstatus-camel&#x27;, pods:0, testing:false, cases:[&#x27;CP-004&#x27;] },
+        { id:&#x27;appointment-detail&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-ocp-integracion-retrieveappointmentdetailsv1-camel&#x27;, pods:1, testing:false, cases:[&#x27;CP-005&#x27;] },
+        { id:&#x27;repair&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-ocp-integracion-repairandreplaceequipmentv1-camel&#x27;, pods:0, testing:false, cases:[&#x27;CP-005&#x27;] },
+        { id:&#x27;cancel-order&#x27;, ns:&#x27;testing&#x27;, name:&#x27;ms-integracion-listenercancelorder&#x27;, pods:1, testing:false, cases:[&#x27;CP-006&#x27;] },
+        { id:&#x27;cancel-ticket&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-ocp-integracion-cancelticketevent-camel&#x27;, pods:1, testing:false, cases:[&#x27;CP-006&#x27;] },
+        { id:&#x27;cancel-device&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-integracion-cancelreservationofdevice-camel&#x27;, pods:1, testing:false, cases:[&#x27;CP-006&#x27;] },
+        { id:&#x27;new-party&#x27;, ns:&#x27;testing&#x27;, name:&#x27;ms-ocp-integracion-notifypartyevents-camel&#x27;, pods:1, testing:false, cases:[] },
+        { id:&#x27;new-resource&#x27;, ns:&#x27;testing&#x27;, name:&#x27;ms-ocp-integracion-au-resourceorder-camel&#x27;, pods:0, testing:false, cases:[] },
+        { id:&#x27;new-event&#x27;, ns:&#x27;testing&#x27;, name:&#x27;ms-integracion-eventorchestrator&#x27;, pods:1, testing:false, cases:[] },
+        { id:&#x27;new-openid&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-ocp-integracion-openid-retrieveuserprofile-camel&#x27;, pods:1, testing:false, cases:[] },
+        { id:&#x27;new-unified&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-ocp-integracion-partyeventunified-camel&#x27;, pods:0, testing:false, cases:[] },
+        { id:&#x27;new-zero&#x27;, ns:&#x27;testing-matrix&#x27;, name:&#x27;ms-ocp-integracion-matrix-zerodiagnosis-camel&#x27;, pods:1, testing:false, cases:[] },
+        { id:&#x27;new-usage&#x27;, ns:&#x27;testing-matrix&#x27;, name:&#x27;ms-ocp-matrix-usageconsumption-camel&#x27;, pods:1, testing:false, cases:[] },
+        { id:&#x27;new-retention&#x27;, ns:&#x27;testing-matrix&#x27;, name:&#x27;ms-ocp-integracion-matrix-frequentretentiondiscountcaller-camel&#x27;, pods:0, testing:false, cases:[] }
+        ,{ id:&#x27;new-create-start&#x27;, ns:&#x27;testing-diversificacion&#x27;, name:&#x27;ms-ocp-integracion-createstartreqbyvaluev1-camel&#x27;, pods:1, testing:false, cases:[] }
+      ];
+      const cases = [
+        { id:&#x27;CP-001&#x27;, title:&#x27;Alta producto fija FTTH monoInternet · CRM → CMS&#x27;, meta:[&#x27;CRM&#x27;,&#x27;CMS&#x27;,&#x27;Orden creada&#x27;], elements:[&#x27;CRM&#x27;,&#x27;OMS&#x27;,&#x27;SVO&#x27;,&#x27;BUS&#x27;,&#x27;API On-premise&#x27;,&#x27;Agendador&#x27;], services:[&#x27;scoring&#x27;,&#x27;validate&#x27;,&#x27;address&#x27;,&#x27;serviceability&#x27;,&#x27;availability&#x27;,&#x27;appointment&#x27;,&#x27;daa&#x27;] },
+        { id:&#x27;CP-002&#x27;, title:&#x27;Alta producto fija FTTH monoInternet · CRM → Pangea&#x27;, meta:[&#x27;CRM&#x27;,&#x27;Pangea&#x27;,&#x27;Orden creada&#x27;], elements:[&#x27;CRM&#x27;,&#x27;OMS&#x27;,&#x27;SVO&#x27;,&#x27;API Azure&#x27;,&#x27;Pangea&#x27;,&#x27;Agendador&#x27;], services:[&#x27;scoring&#x27;,&#x27;validate&#x27;,&#x27;serviceability&#x27;,&#x27;availability&#x27;,&#x27;appointment&#x27;,&#x27;daa&#x27;,&#x27;pangea&#x27;] },
+        { id:&#x27;CP-003&#x27;, title:&#x27;Alta producto fija FTTH monoInternet · DITO → CMS&#x27;, meta:[&#x27;DITO&#x27;,&#x27;CMS&#x27;,&#x27;Orden creada&#x27;], elements:[&#x27;DITO&#x27;,&#x27;API On-premise&#x27;,&#x27;OMS&#x27;,&#x27;SVO&#x27;,&#x27;CMS&#x27;], services:[&#x27;validate&#x27;,&#x27;address&#x27;,&#x27;serviceability&#x27;,&#x27;availability&#x27;,&#x27;appointment&#x27;,&#x27;daa&#x27;] },
+        { id:&#x27;CP-004&#x27;, title:&#x27;Modificación de velocidad de producto FTTH&#x27;, meta:[&#x27;CRM&#x27;,&#x27;OMS&#x27;,&#x27;Modificación&#x27;], elements:[&#x27;CRM&#x27;,&#x27;OMS&#x27;,&#x27;API On-premise&#x27;,&#x27;Matrix&#x27;], services:[&#x27;serviceability&#x27;,&#x27;matrix-catalog&#x27;,&#x27;matrix-status&#x27;] },
+        { id:&#x27;CP-005&#x27;, title:&#x27;Agendamiento de reparación de servicio fijo&#x27;, meta:[&#x27;Front atención&#x27;,&#x27;Agendador&#x27;,&#x27;Reparación&#x27;], elements:[&#x27;Front atención&#x27;,&#x27;API Azure&#x27;,&#x27;Agendador&#x27;,&#x27;Workforce&#x27;], services:[&#x27;appointment&#x27;,&#x27;appointment-detail&#x27;,&#x27;repair&#x27;] },
+        { id:&#x27;CP-006&#x27;, title:&#x27;Cancelación de orden de alta FTTH&#x27;, meta:[&#x27;CRM&#x27;,&#x27;SVO&#x27;,&#x27;Cancelación&#x27;], elements:[&#x27;CRM&#x27;,&#x27;OMS&#x27;,&#x27;SVO&#x27;,&#x27;BUS&#x27;], services:[&#x27;cancel-order&#x27;,&#x27;cancel-ticket&#x27;,&#x27;cancel-device&#x27;] }
+      ];
+
+      const state = { view:&#x27;impact&#x27;, caseQuery:&#x27;&#x27;, elementQuery:&#x27;&#x27;, viewQuery:&#x27;&#x27;, openCase:&#x27;CP-001&#x27;, openImpact:&#x27;appointment&#x27;, notice:&#x27;&#x27;, focusField:null };
+      const byService = id =&gt; services.find(service =&gt; service.id === id);
+      const byCase = id =&gt; cases.find(item =&gt; item.id === id);
+      const heading = root.querySelector(&#x27;#imHeading&#x27;);
+      const notice = root.querySelector(&#x27;#imNotice&#x27;);
+      const filters = root.querySelector(&#x27;#imFilters&#x27;);
+      const resultsHead = root.querySelector(&#x27;#imResultsHead&#x27;);
+      const content = root.querySelector(&#x27;#imContent&#x27;);
+      const normalize = value =&gt; String(value).normalize(&#x27;NFD&#x27;).replace(/[\u0300-\u036f]/g, &#x27;&#x27;).toLowerCase().trim();
+      const escapeHtml = value =&gt; String(value).replaceAll(&#x27;&amp;&#x27;,&#x27;&amp;amp;&#x27;).replaceAll(&#x27;&lt;&#x27;,&#x27;&amp;lt;&#x27;).replaceAll(&#x27;&gt;&#x27;,&#x27;&amp;gt;&#x27;).replaceAll(&#x27;&quot;&#x27;,&#x27;&amp;quot;&#x27;).replaceAll(&quot;&#x27;&quot;,&#x27;&amp;#039;&#x27;);
+      const distance = (a,b) =&gt; { const t=Array.from({length:a.length+1},(_,i)=&gt;[i]); for(let j=0;j&lt;=b.length;j+=1)t[0][j]=j; for(let i=1;i&lt;=a.length;i+=1)for(let j=1;j&lt;=b.length;j+=1)t[i][j]=Math.min(t[i-1][j]+1,t[i][j-1]+1,t[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return t[a.length][b.length]; };
+      const fuzzy = (query,text) =&gt; { const q=normalize(query); if(!q)return true; const target=normalize(text); if(target.includes(q))return true; const qw=q.split(/\s+/).filter(Boolean), tw=target.split(/\s+/).filter(Boolean); return qw.every(word=&gt;tw.some(candidate=&gt;distance(word,candidate)&lt;=(word.length&gt;6?2:1))); };
+      const ocpBase = &#x27;https://console-openshift-console.apps.ocpnprod7.gp.inet&#x27;;
+      const ocpUrl = service =&gt; `${ocpBase}/k8s/ns/${encodeURIComponent(service.ns)}/deployments/${encodeURIComponent(service.name)}`;
+
+      const namespace = value =&gt; `&lt;span class=&quot;im-namespace&quot;&gt;${escapeHtml(value)}&lt;/span&gt;`;
+      const podState = service =&gt; `&lt;span class=&quot;im-state ${service.pods ? &#x27;is-on&#x27; : &#x27;is-off&#x27;}&quot;&gt;${service.pods ? &#x27;Encendido&#x27; : &#x27;Apagado&#x27;}&lt;/span&gt;`;
+      const testingControl = service =&gt; `&lt;label class=&quot;im-testing ${service.testing ? &#x27;is-active&#x27; : &#x27;&#x27;}&quot;&gt;&lt;input type=&quot;checkbox&quot; data-testing=&quot;${service.id}&quot; ${service.testing ? &#x27;checked&#x27; : &#x27;&#x27;}&gt;En pruebas&lt;/label&gt;`;
+      const ocpLink = service =&gt; `&lt;a class=&quot;im-ocp-link&quot; href=&quot;${ocpUrl(service)}&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Abrir OCP &lt;i data-lucide=&quot;external-link&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/a&gt;`;
+      const serviceNameLink = service =&gt; `&lt;a class=&quot;im-service-name im-service-link&quot; href=&quot;${ocpUrl(service)}&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;${escapeHtml(service.name)}&lt;/a&gt;`;
+      const testingNote = service =&gt; service.testing ? `&lt;small class=&quot;im-testing-note&quot;&gt;Marcado por ${escapeHtml(service.testingBy || &#x27;Tú&#x27;)} · otros usuarios verán esta advertencia&lt;/small&gt;` : &#x27;&#x27;;
+      const serviceRow = service =&gt; `&lt;div class=&quot;im-service-row&quot;&gt;${serviceNameLink(service)}${namespace(service.ns)}&lt;span class=&quot;im-pods&quot;&gt;${service.pods ? &#x27;1/1&#x27; : &#x27;0/1&#x27;}&lt;/span&gt;${podState(service)}${testingControl(service)}${ocpLink(service)}${testingNote(service)}&lt;/div&gt;`;
+
+      function updateChrome() {
+        root.querySelector(&#x27;#imCasesCount&#x27;).textContent = cases.length;
+        root.querySelector(&#x27;#imUnmappedCount&#x27;).textContent = services.filter(service =&gt; !service.cases.length).length;
+        root.querySelector(&#x27;#imImpactCount&#x27;).textContent = services.filter(service =&gt; service.cases.length).length;
+        const testingCount = services.filter(service =&gt; service.testing).length;
+        root.querySelector(&#x27;#imLiveTesting&#x27;).textContent = `${testingCount} ${testingCount === 1 ? &#x27;microservicio en pruebas&#x27; : &#x27;microservicios en pruebas&#x27;}`;
+        root.querySelectorAll(&#x27;.im-tab&#x27;).forEach(tab =&gt; tab.setAttribute(&#x27;aria-selected&#x27;, String(tab.dataset.view === state.view)));
+      }
+
+      function renderCases() {
+        heading.innerHTML = `&lt;div class=&quot;im-heading-copy&quot;&gt;&lt;p class=&quot;im-kicker&quot;&gt;ESCENARIOS&lt;/p&gt;&lt;h1&gt;Casos de prueba&lt;/h1&gt;&lt;p&gt;Busca un escenario y consulta sus microservicios requeridos.&lt;/p&gt;&lt;/div&gt;&lt;span class=&quot;im-mode&quot;&gt;Acceso a OpenShift&lt;/span&gt;`;
+        filters.innerHTML = `&lt;div class=&quot;im-filters&quot;&gt;&lt;label class=&quot;im-field&quot;&gt;&lt;span&gt;Nombre del caso de prueba&lt;/span&gt;&lt;span class=&quot;im-input&quot;&gt;&lt;i data-lucide=&quot;search&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;input id=&quot;imCaseQuery&quot; type=&quot;search&quot; value=&quot;${escapeHtml(state.caseQuery)}&quot; placeholder=&quot;Ej. Alta FTTH&quot;&gt;&lt;/span&gt;&lt;/label&gt;&lt;label class=&quot;im-field&quot;&gt;&lt;span&gt;Elemento o microservicio&lt;/span&gt;&lt;span class=&quot;im-input&quot;&gt;&lt;i data-lucide=&quot;layers-3&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;input id=&quot;imElementQuery&quot; type=&quot;search&quot; value=&quot;${escapeHtml(state.elementQuery)}&quot; placeholder=&quot;Ej. API Azure o validateaddress&quot;&gt;&lt;/span&gt;&lt;/label&gt;&lt;/div&gt;`;
+        const visible = cases.filter(item =&gt; fuzzy(state.caseQuery,item.title) &amp;&amp; fuzzy(state.elementQuery,[...item.elements,...item.services.map(id=&gt;byService(id).name)].join(&#x27; &#x27;)));
+        resultsHead.innerHTML = `&lt;strong&gt;Escenarios encontrados&lt;/strong&gt;&lt;span&gt;${visible.length} de ${cases.length}&lt;/span&gt;`;
+        content.innerHTML = visible.length ? visible.map(item =&gt; {
+          const open = item.id === state.openCase;
+          return `&lt;article class=&quot;im-scenario ${open?&#x27;is-open&#x27;:&#x27;&#x27;}&quot;&gt;&lt;button class=&quot;im-scenario-trigger&quot; type=&quot;button&quot; data-open-case=&quot;${item.id}&quot; aria-expanded=&quot;${open}&quot;&gt;&lt;span&gt;&lt;small class=&quot;im-case-id&quot;&gt;${item.id}&lt;/small&gt;&lt;span class=&quot;im-case-title&quot;&gt;${escapeHtml(item.title)}&lt;/span&gt;&lt;span class=&quot;im-case-meta&quot;&gt;${item.meta.map(value=&gt;`&lt;span&gt;${escapeHtml(value)}&lt;/span&gt;`).join(&#x27;&#x27;)}&lt;/span&gt;&lt;/span&gt;&lt;i class=&quot;im-chevron&quot; data-lucide=&quot;chevron-down&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;div class=&quot;im-case-detail&quot;&gt;&lt;div class=&quot;im-service-table&quot;&gt;&lt;div class=&quot;im-service-row im-service-header&quot;&gt;&lt;span&gt;Microservicio&lt;/span&gt;&lt;span&gt;Namespace&lt;/span&gt;&lt;span&gt;Réplicas&lt;/span&gt;&lt;span&gt;Estado&lt;/span&gt;&lt;span&gt;En pruebas&lt;/span&gt;&lt;span&gt;OpenShift&lt;/span&gt;&lt;/div&gt;${item.services.map(id=&gt;serviceRow(byService(id))).join(&#x27;&#x27;)}&lt;/div&gt;&lt;/div&gt;&lt;/article&gt;`;
+        }).join(&#x27;&#x27;) : `&lt;div class=&quot;im-empty&quot;&gt;No hay coincidencias.&lt;/div&gt;`;
+        root.querySelector(&#x27;#imCaseQuery&#x27;).addEventListener(&#x27;input&#x27;, event =&gt; { state.caseQuery=event.target.value; state.focusField=&#x27;case&#x27;; render(); });
+        root.querySelector(&#x27;#imElementQuery&#x27;).addEventListener(&#x27;input&#x27;, event =&gt; { state.elementQuery=event.target.value; state.focusField=&#x27;element&#x27;; render(); });
+      }
+
+      function renderUnmapped() {
+        heading.innerHTML = `&lt;div class=&quot;im-heading-copy&quot;&gt;&lt;p class=&quot;im-kicker&quot;&gt;INVENTARIO PENDIENTE&lt;/p&gt;&lt;h1&gt;Microservicios sin flujo identificado&lt;/h1&gt;&lt;p&gt;Están en el inventario OCP, pero todavía no aparecen asociados a ningún caso de prueba.&lt;/p&gt;&lt;/div&gt;`;
+        filters.innerHTML = `&lt;div class=&quot;im-filters is-single&quot;&gt;&lt;label class=&quot;im-field&quot;&gt;&lt;span&gt;Buscar microservicio o namespace&lt;/span&gt;&lt;span class=&quot;im-input&quot;&gt;&lt;i data-lucide=&quot;search&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;input id=&quot;imViewQuery&quot; type=&quot;search&quot; value=&quot;${escapeHtml(state.viewQuery)}&quot; placeholder=&quot;Ej. matrix o partyevent&quot;&gt;&lt;/span&gt;&lt;/label&gt;&lt;/div&gt;`;
+        const all = services.filter(service=&gt;!service.cases.length);
+        const visible = all.filter(service=&gt;fuzzy(state.viewQuery,`${service.name} ${service.ns}`));
+        resultsHead.innerHTML = `&lt;strong&gt;Pendientes de relacionar&lt;/strong&gt;&lt;span&gt;${visible.length} de ${all.length}&lt;/span&gt;`;
+        content.innerHTML = visible.length ? visible.map(service=&gt;`&lt;div class=&quot;im-unmapped-row&quot;&gt;&lt;div class=&quot;im-unmapped-main&quot;&gt;&lt;span class=&quot;im-unmapped-name&quot;&gt;${serviceNameLink(service)}&lt;small class=&quot;im-new-label&quot;&gt;Sin casos asociados&lt;/small&gt;&lt;/span&gt;${namespace(service.ns)}&lt;span class=&quot;im-pods&quot;&gt;${service.pods?&#x27;1/1&#x27;:&#x27;0/1&#x27;}&lt;/span&gt;${testingControl(service)}${ocpLink(service)}${testingNote(service)}&lt;/div&gt;&lt;/div&gt;`).join(&#x27;&#x27;) : `&lt;div class=&quot;im-empty&quot;&gt;No hay coincidencias.&lt;/div&gt;`;
+        root.querySelector(&#x27;#imViewQuery&#x27;).addEventListener(&#x27;input&#x27;, event=&gt;{state.viewQuery=event.target.value;state.focusField=&#x27;view&#x27;;render();});
+      }
+
+      function renderImpact() {
+        heading.innerHTML = `&lt;div class=&quot;im-heading-copy&quot;&gt;&lt;p class=&quot;im-kicker&quot;&gt;ANÁLISIS INVERSO&lt;/p&gt;&lt;h1&gt;Impacto al apagar un microservicio&lt;/h1&gt;&lt;p&gt;Ordenados por la cantidad de casos de prueba que dependen de cada uno.&lt;/p&gt;&lt;/div&gt;`;
+        filters.innerHTML = `&lt;div class=&quot;im-filters is-single&quot;&gt;&lt;label class=&quot;im-field&quot;&gt;&lt;span&gt;Buscar microservicio o caso afectado&lt;/span&gt;&lt;span class=&quot;im-input&quot;&gt;&lt;i data-lucide=&quot;search&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;input id=&quot;imViewQuery&quot; type=&quot;search&quot; value=&quot;${escapeHtml(state.viewQuery)}&quot; placeholder=&quot;Ej. serviceability o CP-003&quot;&gt;&lt;/span&gt;&lt;/label&gt;&lt;/div&gt;`;
+        const ranked = services.filter(service=&gt;service.cases.length).sort((a,b)=&gt;b.cases.length-a.cases.length || a.name.localeCompare(b.name));
+        const visible = ranked.filter(service=&gt;fuzzy(state.viewQuery,`${service.name} ${service.ns} ${service.cases.map(id=&gt;`${id} ${byCase(id).title}`).join(&#x27; &#x27;)}`));
+        resultsHead.innerHTML = `&lt;strong&gt;Dependencias identificadas&lt;/strong&gt;&lt;span&gt;${visible.length} microservicios&lt;/span&gt;`;
+        content.innerHTML = visible.length ? visible.map((service,index)=&gt;{
+          const open=service.id===state.openImpact;
+          return `&lt;article class=&quot;im-impact-row ${open?&#x27;is-open&#x27;:&#x27;&#x27;}&quot;&gt;&lt;div class=&quot;im-impact-main&quot;&gt;&lt;button class=&quot;im-impact-trigger&quot; type=&quot;button&quot; data-open-impact=&quot;${service.id}&quot; aria-expanded=&quot;${open}&quot;&gt;&lt;span class=&quot;im-rank&quot;&gt;#${index+1}&lt;/span&gt;&lt;span class=&quot;im-service-name&quot;&gt;${escapeHtml(service.name)}&lt;/span&gt;${namespace(service.ns)}&lt;span class=&quot;im-impact-count&quot;&gt;&lt;strong&gt;${service.cases.length}&lt;/strong&gt; casos&lt;/span&gt;&lt;i class=&quot;im-chevron&quot; data-lucide=&quot;chevron-down&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;div class=&quot;im-impact-state&quot;&gt;${podState(service)}&lt;/div&gt;&lt;div class=&quot;im-impact-test&quot;&gt;${testingControl(service)}&lt;/div&gt;&lt;div class=&quot;im-impact-ocp&quot;&gt;${ocpLink(service)}&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;im-impact-detail&quot;&gt;&lt;strong&gt;Casos que podrían verse afectados&lt;/strong&gt;&lt;div class=&quot;im-affected&quot;&gt;${service.cases.map(id=&gt;`&lt;span&gt;${id} · ${escapeHtml(byCase(id).title)}&lt;/span&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;${service.testing?`&lt;small class=&quot;im-testing-note&quot;&gt;Actualmente en pruebas por ${escapeHtml(service.testingBy || &#x27;Tú&#x27;)}&lt;/small&gt;`:&#x27;&#x27;}&lt;/div&gt;&lt;/article&gt;`;
+        }).join(&#x27;&#x27;) : `&lt;div class=&quot;im-empty&quot;&gt;No hay coincidencias.&lt;/div&gt;`;
+        root.querySelector(&#x27;#imViewQuery&#x27;).addEventListener(&#x27;input&#x27;, event=&gt;{state.viewQuery=event.target.value;state.focusField=&#x27;view&#x27;;render();});
+      }
+
+      function bindActions() {
+        root.querySelectorAll(&#x27;[data-open-case]&#x27;).forEach(button=&gt;button.addEventListener(&#x27;click&#x27;,()=&gt;{state.openCase=state.openCase===button.dataset.openCase?null:button.dataset.openCase;render();}));
+        root.querySelectorAll(&#x27;[data-open-impact]&#x27;).forEach(button=&gt;button.addEventListener(&#x27;click&#x27;,()=&gt;{state.openImpact=state.openImpact===button.dataset.openImpact?null:button.dataset.openImpact;render();}));
+        root.querySelectorAll(&#x27;[data-testing]&#x27;).forEach(input=&gt;input.addEventListener(&#x27;change&#x27;,event=&gt;{event.stopPropagation();const service=byService(input.dataset.testing);service.testing=input.checked;service.testingBy=input.checked?&#x27;Tú · ahora&#x27;:&#x27;&#x27;;state.notice=input.checked?`${service.name} quedó marcado como “En pruebas”.`:`Se retiró la marca de pruebas de ${service.name}.`;render();}));
+      }
+
+      function render() {
+        updateChrome();
+        notice.className=`im-notice ${state.notice?&#x27;is-visible&#x27;:&#x27;&#x27;}`;
+        notice.innerHTML=state.notice?`&lt;i data-lucide=&quot;triangle-alert&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;span&gt;${escapeHtml(state.notice)}&lt;/span&gt;`:&#x27;&#x27;;
+        if(state.view===&#x27;cases&#x27;)renderCases();
+        if(state.view===&#x27;unmapped&#x27;)renderUnmapped();
+        if(state.view===&#x27;impact&#x27;)renderImpact();
+        bindActions();
+        const focusSelectors={case:&#x27;#imCaseQuery&#x27;,element:&#x27;#imElementQuery&#x27;,view:&#x27;#imViewQuery&#x27;};
+        const focusTarget=state.focusField?root.querySelector(focusSelectors[state.focusField]):null;
+        if(focusTarget){focusTarget.focus();focusTarget.setSelectionRange(focusTarget.value.length,focusTarget.value.length);}
+        state.focusField=null;
+        if(window.lucide)lucide.createIcons({attrs:{width:16,height:16}});
+      }
+
+      root.querySelectorAll(&#x27;.im-tab&#x27;).forEach(tab=&gt;tab.addEventListener(&#x27;click&#x27;,()=&gt;{state.view=tab.dataset.view;state.viewQuery=&#x27;&#x27;;state.notice=&#x27;&#x27;;render();}));
+      render();
+    })();
+  &lt;/script&gt;
+&lt;/div&gt;
+
+&lt;script src=&quot;https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set([&quot;top&quot;, &quot;right&quot;, &quot;bottom&quot;, &quot;left&quot;]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+
+  const getTrigger = (target) =&gt;
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest(&quot;[data-tooltip]&quot;)
+      : null;
+  const containsTarget = (trigger, target) =&gt;
+    target?.nodeType != null &amp;&amp; trigger.contains(target);
+  const getContent = (trigger) =&gt;
+    trigger.getAttribute(&quot;data-tooltip&quot;)?.trim() ?? &quot;&quot;;
+  const getPlacement = (trigger) =&gt; {
+    const placement = trigger.getAttribute(&quot;data-tooltip-placement&quot;);
+    return tooltipPlacements.has(placement) ? placement : &quot;top&quot;;
+  };
+  const getTooltip = () =&gt; {
+    if (tooltip == null) {
+      tooltip = document.createElement(&quot;div&quot;);
+      tooltip.id = tooltipId;
+      tooltip.className = &quot;tooltip&quot;;
+      tooltip.setAttribute(&quot;role&quot;, &quot;tooltip&quot;);
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) =&gt; {
+    const ids = new Set(
+      (trigger.getAttribute(&quot;aria-describedby&quot;) ?? &quot;&quot;)
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute(&quot;aria-describedby&quot;);
+    } else {
+      trigger.setAttribute(&quot;aria-describedby&quot;, [...ids].join(&quot; &quot;));
+    }
+  };
+  const clearOpenTimeout = () =&gt; {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) =&gt; {
+    clearOpenTimeout();
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) =&gt; {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-width&quot;,
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-height&quot;,
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: &quot;fixed&quot;,
+    })
+      .then(({ x, y }) =&gt; {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = &quot;visible&quot;;
+      })
+      .catch(() =&gt; {
+        if (activeTrigger === trigger &amp;&amp; request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) =&gt; {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = &quot;hidden&quot;;
+    floating.style.transform = &quot;translate(0, 0)&quot;;
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () =&gt; {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) =&gt; {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() &lt; skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() =&gt; {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) =&gt; {
+    if (event.pointerType === &quot;touch&quot;) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handleLeave = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(&quot;:focus-visible&quot;)) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) =&gt; {
+    if (event.key === &quot;Escape&quot;) {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () =&gt; {
+    closeTooltip(false);
+    document.removeEventListener(&quot;pointerover&quot;, handlePointerOpen);
+    document.removeEventListener(&quot;pointerout&quot;, handleLeave);
+    document.removeEventListener(&quot;focusin&quot;, handleFocusIn);
+    document.removeEventListener(&quot;focusout&quot;, handleLeave);
+    document.removeEventListener(&quot;keydown&quot;, handleKeyDown);
+    document.removeEventListener(&quot;contextmenu&quot;, handleContextMenu);
+    tooltip = null;
+  };
+
+  document.addEventListener(&quot;pointerover&quot;, handlePointerOpen);
+  document.addEventListener(&quot;pointerout&quot;, handleLeave);
+  document.addEventListener(&quot;focusin&quot;, handleFocusIn);
+  document.addEventListener(&quot;focusout&quot;, handleLeave);
+  document.addEventListener(&quot;keydown&quot;, handleKeyDown);
+  document.addEventListener(&quot;contextmenu&quot;, handleContextMenu);
+  window.addEventListener(&quot;pagehide&quot;, destroy, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-lucide&quot; async src=&quot;https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const initialize = () =&gt; {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById(&quot;codex-visualization-lucide&quot;)
+    ?.addEventListener(&quot;load&quot;, initialize, { once: true });
+})();
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+</body>
+</html>

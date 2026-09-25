@@ -1,0 +1,15 @@
+# Imagen de runtime para builds binarios ejecutados dentro de OpenShift.
+# El contexto debe contener el directorio completo quarkus-app/ ya compilado.
+ARG RUNTIME_IMAGE=registry.access.redhat.com/ubi8/openjdk-17:1.16-1
+FROM ${RUNTIME_IMAGE}
+
+WORKDIR /deployments
+COPY --chown=1001:0 quarkus-app/lib/ ./lib/
+COPY --chown=1001:0 quarkus-app/*.jar ./
+COPY --chown=1001:0 quarkus-app/app/ ./app/
+COPY --chown=1001:0 quarkus-app/quarkus/ ./quarkus/
+
+USER 1001
+EXPOSE 8080
+ENV JAVA_TOOL_OPTIONS="-Dquarkus.http.host=0.0.0.0"
+ENTRYPOINT ["java", "-jar", "/deployments/quarkus-run.jar"]

@@ -1,0 +1,301 @@
+<div id="ocpImpactMock">
+  <style>
+    #ocpImpactMock {
+      color-scheme: light dark;
+      --im-bg: light-dark(#f3f5f2, #111713);
+      --im-surface: light-dark(#ffffff, #19211c);
+      --im-soft: light-dark(#edf3ef, #202a24);
+      --im-text: light-dark(#17221c, #edf4ef);
+      --im-muted: light-dark(#67736c, #aab8af);
+      --im-line: light-dark(#d6ddd8, #344039);
+      --im-brand: light-dark(#116b55, #78d7b5);
+      --im-brand-soft: light-dark(#dff2e9, #183b2f);
+      --im-blue-soft: light-dark(#e6f4ff, #172f3f);
+      --im-blue-text: light-dark(#285b7c, #acd8f5);
+      --im-on: light-dark(#14734d, #68d49f);
+      --im-on-soft: light-dark(#e4f5ec, #193a2b);
+      --im-off: light-dark(#9a421f, #f1a37f);
+      --im-off-soft: light-dark(#fff0e9, #40251d);
+      --im-test: light-dark(#8a6200, #f0c35a);
+      --im-test-soft: light-dark(#fff6d9, #3d3219);
+      width: 100%;
+      overflow: hidden;
+      background: var(--im-bg);
+      color: var(--im-text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    #ocpImpactMock * { box-sizing: border-box; }
+    #ocpImpactMock .im-window { width: 100%; min-height: 740px; background: var(--im-bg); }
+    #ocpImpactMock .im-topbar { min-height: 66px; display: flex; align-items: center; gap: 12px; padding: 12px 28px; background: var(--im-surface); border-bottom: 1px solid var(--im-line); }
+    #ocpImpactMock .im-logo { width: 38px; height: 38px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 11px; background: var(--im-text); color: var(--im-surface); font-weight: 500; }
+    #ocpImpactMock .im-product small { display: block; color: var(--im-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; }
+    #ocpImpactMock .im-product strong { display: block; margin-top: 2px; font-weight: 500; }
+    #ocpImpactMock .im-live { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 999px; background: var(--im-test-soft); color: var(--im-test); }
+    #ocpImpactMock .im-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--im-test); }
+    #ocpImpactMock .im-tabs { display: flex; gap: 3px; padding: 0 5%; background: var(--im-surface); border-bottom: 1px solid var(--im-line); }
+    #ocpImpactMock .im-tab { min-height: 48px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--im-muted); font: inherit; cursor: pointer; }
+    #ocpImpactMock .im-tab[aria-selected="true"] { color: var(--im-brand); border-bottom-color: var(--im-brand); font-weight: 500; }
+    #ocpImpactMock .im-tab-count { min-width: 24px; padding: 2px 6px; border-radius: 999px; background: var(--im-soft); text-align: center; }
+    #ocpImpactMock .im-main { padding: 30px 5% 48px; }
+    #ocpImpactMock .im-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
+    #ocpImpactMock .im-kicker { margin: 0; color: var(--im-brand); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; }
+    #ocpImpactMock h1 { margin: 7px 0; font-weight: 500; }
+    #ocpImpactMock .im-heading-copy > p:last-child { margin: 0; color: var(--im-muted); }
+    #ocpImpactMock .im-mode { color: var(--im-muted); }
+    #ocpImpactMock .im-notice { display: none; margin-top: 18px; padding: 12px 14px; background: var(--im-test-soft); color: var(--im-test); border-left: 3px solid var(--im-test); }
+    #ocpImpactMock .im-notice.is-visible { display: flex; align-items: center; gap: 9px; }
+    #ocpImpactMock .im-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 24px; }
+    #ocpImpactMock .im-filters.is-single { grid-template-columns: minmax(260px, 620px); }
+    #ocpImpactMock .im-field { display: block; }
+    #ocpImpactMock .im-field > span { display: block; margin-bottom: 7px; color: var(--im-muted); }
+    #ocpImpactMock .im-input { min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border: 1px solid var(--im-line); border-radius: 11px; background: var(--im-surface); color: var(--im-muted); }
+    #ocpImpactMock .im-input:focus-within { border-color: var(--im-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--im-brand) 17%, transparent); }
+    #ocpImpactMock .im-input input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--im-text); font: inherit; }
+    #ocpImpactMock .im-input input::placeholder { color: var(--im-muted); opacity: .8; }
+    #ocpImpactMock .im-results-head { min-height: 48px; display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-top: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--im-line); }
+    #ocpImpactMock .im-results-head strong { font-weight: 500; }
+    #ocpImpactMock .im-results-head span { color: var(--im-muted); }
+    #ocpImpactMock .im-list { background: var(--im-surface); }
+    #ocpImpactMock .im-scenario { border-bottom: 1px solid var(--im-line); }
+    #ocpImpactMock .im-scenario-trigger { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: center; padding: 17px 20px; border: 0; background: transparent; color: var(--im-text); text-align: left; cursor: pointer; }
+    #ocpImpactMock .im-scenario-trigger:hover { background: var(--im-soft); }
+    #ocpImpactMock .im-case-id { display: block; margin-bottom: 4px; color: var(--im-brand); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    #ocpImpactMock .im-case-title { display: block; font-weight: 500; }
+    #ocpImpactMock .im-case-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; color: var(--im-muted); }
+    #ocpImpactMock .im-case-meta span + span::before { content: "·"; margin-right: 7px; }
+    #ocpImpactMock .im-chevron { color: var(--im-muted); transition: transform .18s ease; }
+    #ocpImpactMock .im-scenario.is-open .im-chevron { transform: rotate(180deg); }
+    #ocpImpactMock .im-case-detail { display: none; padding: 0 20px 20px; }
+    #ocpImpactMock .im-scenario.is-open .im-case-detail { display: block; }
+    #ocpImpactMock .im-service-table { border-top: 1px solid var(--im-line); }
+    #ocpImpactMock .im-service-row { min-height: 58px; display: grid; grid-template-columns: minmax(230px, 1fr) minmax(145px, .35fr) 58px 84px 112px 112px; gap: 11px; align-items: center; padding: 10px; border-bottom: 1px solid var(--im-line); }
+    #ocpImpactMock .im-service-row.im-service-header { min-height: 40px; color: var(--im-muted); }
+    #ocpImpactMock .im-service-name { min-width: 0; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    #ocpImpactMock .im-service-link { color: var(--im-brand); text-decoration: none; }
+    #ocpImpactMock .im-service-link:hover { text-decoration: underline; }
+    #ocpImpactMock .im-namespace { display: inline-flex; width: fit-content; max-width: 100%; padding: 4px 8px; border-radius: 999px; background: var(--im-blue-soft); color: var(--im-blue-text); overflow-wrap: anywhere; }
+    #ocpImpactMock .im-pods { color: var(--im-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    #ocpImpactMock .im-state { display: inline-flex; align-items: center; gap: 6px; }
+    #ocpImpactMock .im-state::before { content: ""; width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; }
+    #ocpImpactMock .im-state.is-on { color: var(--im-on); }
+    #ocpImpactMock .im-state.is-on::before { background: var(--im-on); }
+    #ocpImpactMock .im-state.is-off { color: var(--im-off); }
+    #ocpImpactMock .im-state.is-off::before { background: var(--im-off); }
+    #ocpImpactMock .im-testing { display: inline-flex; align-items: center; gap: 7px; color: var(--im-muted); cursor: pointer; }
+    #ocpImpactMock .im-testing input { width: 17px; height: 17px; accent-color: var(--im-test); }
+    #ocpImpactMock .im-testing.is-active { color: var(--im-test); font-weight: 500; }
+    #ocpImpactMock .im-ocp-link { min-height: 33px; display: inline-flex; width: fit-content; align-items: center; gap: 6px; padding: 6px 9px; border: 1px solid var(--im-line); border-radius: 8px; background: var(--im-soft); color: var(--im-brand); text-decoration: none; white-space: nowrap; }
+    #ocpImpactMock .im-ocp-link:hover { border-color: var(--im-brand); }
+    #ocpImpactMock .im-testing-note { grid-column: 1 / -1; margin: -3px 0 3px; color: var(--im-test); }
+    #ocpImpactMock .im-unmapped-row,
+    #ocpImpactMock .im-impact-row { border-bottom: 1px solid var(--im-line); }
+    #ocpImpactMock .im-unmapped-main { min-height: 66px; display: grid; grid-template-columns: minmax(260px, 1fr) minmax(145px, .3fr) 80px 112px 112px; gap: 12px; align-items: center; padding: 12px 16px; }
+    #ocpImpactMock .im-unmapped-name { min-width: 0; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    #ocpImpactMock .im-no-flow { color: var(--im-muted); }
+    #ocpImpactMock .im-impact-main { display: grid; grid-template-columns: minmax(0, 1fr) 96px 126px 124px; align-items: center; }
+    #ocpImpactMock .im-impact-trigger { width: 100%; min-height: 70px; display: grid; grid-template-columns: 42px minmax(230px, 1fr) minmax(145px, .3fr) 95px auto; gap: 12px; align-items: center; padding: 12px 10px 12px 16px; border: 0; background: transparent; color: var(--im-text); text-align: left; cursor: pointer; }
+    #ocpImpactMock .im-impact-trigger:hover { background: var(--im-soft); }
+    #ocpImpactMock .im-impact-state { padding: 12px 4px; }
+    #ocpImpactMock .im-impact-test { padding: 12px 16px 12px 4px; }
+    #ocpImpactMock .im-impact-ocp { padding: 12px 16px 12px 0; }
+    #ocpImpactMock .im-rank { color: var(--im-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    #ocpImpactMock .im-impact-count { display: inline-flex; width: fit-content; align-items: baseline; gap: 4px; padding: 5px 9px; border-radius: 999px; background: var(--im-brand-soft); color: var(--im-brand); }
+    #ocpImpactMock .im-impact-count strong { font-weight: 500; }
+    #ocpImpactMock .im-impact-detail { display: none; padding: 0 16px 16px 70px; }
+    #ocpImpactMock .im-impact-row.is-open .im-impact-detail { display: block; }
+    #ocpImpactMock .im-impact-detail strong { font-weight: 500; }
+    #ocpImpactMock .im-affected { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+    #ocpImpactMock .im-affected span { padding: 5px 9px; border-radius: 999px; background: var(--im-soft); color: var(--im-muted); }
+    #ocpImpactMock .im-new-label { display: inline-flex; width: fit-content; margin-top: 6px; padding: 3px 7px; border-radius: 999px; background: var(--im-test-soft); color: var(--im-test); }
+    #ocpImpactMock .im-empty { padding: 42px 18px; text-align: center; color: var(--im-muted); }
+    @media (max-width: 860px) {
+      #ocpImpactMock .im-service-row.im-service-header { display: none; }
+      #ocpImpactMock .im-service-row:not(.im-service-header) { grid-template-columns: minmax(0, 1fr) auto auto; padding-block: 14px; }
+      #ocpImpactMock .im-service-name { grid-column: 1 / -1; }
+      #ocpImpactMock .im-namespace { grid-column: 1; }
+      #ocpImpactMock .im-pods { grid-column: 2; }
+      #ocpImpactMock .im-state { grid-column: 3; }
+      #ocpImpactMock .im-testing { grid-column: 1 / 3; }
+      #ocpImpactMock .im-ocp-link { grid-column: 3; }
+      #ocpImpactMock .im-unmapped-main { grid-template-columns: minmax(0, 1fr) auto auto; }
+      #ocpImpactMock .im-unmapped-name { grid-column: 1 / -1; }
+      #ocpImpactMock .im-no-flow { display: none; }
+      #ocpImpactMock .im-impact-main { grid-template-columns: minmax(0, 1fr) 96px 126px 124px; }
+      #ocpImpactMock .im-impact-trigger { grid-template-columns: 34px minmax(0, 1fr) auto; }
+      #ocpImpactMock .im-impact-trigger .im-namespace { grid-column: 2; }
+      #ocpImpactMock .im-impact-trigger .im-impact-count { grid-column: 3; grid-row: 1 / 3; }
+      #ocpImpactMock .im-impact-trigger .im-chevron { grid-column: 3; grid-row: 3; }
+      #ocpImpactMock .im-impact-detail { padding-left: 50px; }
+    }
+    @media (max-width: 640px) {
+      #ocpImpactMock .im-topbar { padding-inline: 18px; }
+      #ocpImpactMock .im-live { display: none; }
+      #ocpImpactMock .im-tabs { padding-inline: 8px; overflow-x: auto; }
+      #ocpImpactMock .im-tab { white-space: nowrap; }
+      #ocpImpactMock .im-main { padding-inline: 18px; }
+      #ocpImpactMock .im-heading { align-items: flex-start; flex-direction: column; }
+      #ocpImpactMock .im-filters { grid-template-columns: 1fr; }
+      #ocpImpactMock .im-unmapped-main { grid-template-columns: 1fr auto; }
+      #ocpImpactMock .im-unmapped-main .im-namespace { grid-column: 1; }
+      #ocpImpactMock .im-unmapped-main .im-pods { grid-column: 2; }
+      #ocpImpactMock .im-unmapped-main .im-testing { grid-column: 1; }
+      #ocpImpactMock .im-unmapped-main .im-ocp-link { grid-column: 2; }
+      #ocpImpactMock .im-impact-main { grid-template-columns: 1fr; }
+      #ocpImpactMock .im-impact-state { padding: 8px 18px; }
+      #ocpImpactMock .im-impact-test { padding: 8px 18px; }
+      #ocpImpactMock .im-impact-ocp { padding: 0 18px 14px; }
+    }
+  </style>
+
+  <div class="im-window">
+    <header class="im-topbar">
+      <div class="im-logo">OC</div>
+      <div class="im-product"><small>CERTIFICACIÓN</small><strong>Mapa operativo OCP</strong></div>
+      <span id="imLiveTesting" class="im-live"></span>
+    </header>
+    <nav class="im-tabs" aria-label="Vistas principales" role="tablist">
+      <button class="im-tab" type="button" role="tab" data-view="cases"><i data-lucide="list-checks" aria-hidden="true"></i>Casos de prueba <span id="imCasesCount" class="im-tab-count"></span></button>
+      <button class="im-tab" type="button" role="tab" data-view="unmapped"><i data-lucide="sparkles" aria-hidden="true"></i>Sin flujo <span id="imUnmappedCount" class="im-tab-count"></span></button>
+      <button class="im-tab" type="button" role="tab" data-view="impact"><i data-lucide="activity" aria-hidden="true"></i>Impacto al apagar <span id="imImpactCount" class="im-tab-count"></span></button>
+    </nav>
+    <main class="im-main">
+      <div id="imHeading" class="im-heading"></div>
+      <div id="imNotice" class="im-notice" role="status" aria-live="polite"></div>
+      <div id="imFilters"></div>
+      <div id="imResultsHead" class="im-results-head"></div>
+      <div id="imContent" class="im-list"></div>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const root = document.getElementById('ocpImpactMock');
+      const services = [
+        { id:'scoring', ns:'testing', name:'ms-integracion-scoringburo', pods:1, testing:false, cases:['CP-001','CP-002'] },
+        { id:'validate', ns:'testing-diversificacion', name:'ms-ocp-integracion-validateaddress-camel', pods:1, testing:true, testingBy:'Equipo FTTH', cases:['CP-001','CP-002','CP-003'] },
+        { id:'address', ns:'testing-diversificacion', name:'ms-ocp-integracion-addressroute-camel', pods:1, testing:false, cases:['CP-001','CP-003'] },
+        { id:'serviceability', ns:'testing-diversificacion', name:'ms-ocp-integracion-checkserviceabilitysystem-camel', pods:0, testing:false, cases:['CP-001','CP-002','CP-003','CP-004'] },
+        { id:'availability', ns:'testing-diversificacion', name:'ms-ocp-integracion-serviceavailability-camel', pods:1, testing:false, cases:['CP-001','CP-002','CP-003'] },
+        { id:'appointment', ns:'testing-diversificacion', name:'ms-ocp-integracion-retrieveavailableappointmentsv1-camel', pods:1, testing:true, testingBy:'Certificación Averías', cases:['CP-001','CP-002','CP-003','CP-005'] },
+        { id:'daa', ns:'testing-diversificacion', name:'ms-ocp-integracion-designandassignresourcesv1-camel', pods:1, testing:false, cases:['CP-001','CP-002','CP-003'] },
+        { id:'pangea', ns:'testing', name:'ms-integracion-geographicsitepangea-camel', pods:1, testing:false, cases:['CP-002'] },
+        { id:'matrix-catalog', ns:'testing-matrix', name:'ms-ocp-integracion-matrix-productcatalog-camel', pods:1, testing:false, cases:['CP-004'] },
+        { id:'matrix-status', ns:'testing-matrix', name:'ms-ocp-matrix-changeproductstatus-camel', pods:0, testing:false, cases:['CP-004'] },
+        { id:'appointment-detail', ns:'testing-diversificacion', name:'ms-ocp-integracion-retrieveappointmentdetailsv1-camel', pods:1, testing:false, cases:['CP-005'] },
+        { id:'repair', ns:'testing-diversificacion', name:'ms-ocp-integracion-repairandreplaceequipmentv1-camel', pods:0, testing:false, cases:['CP-005'] },
+        { id:'cancel-order', ns:'testing', name:'ms-integracion-listenercancelorder', pods:1, testing:false, cases:['CP-006'] },
+        { id:'cancel-ticket', ns:'testing-diversificacion', name:'ms-ocp-integracion-cancelticketevent-camel', pods:1, testing:false, cases:['CP-006'] },
+        { id:'cancel-device', ns:'testing-diversificacion', name:'ms-integracion-cancelreservationofdevice-camel', pods:1, testing:false, cases:['CP-006'] },
+        { id:'new-party', ns:'testing', name:'ms-ocp-integracion-notifypartyevents-camel', pods:1, testing:false, cases:[] },
+        { id:'new-resource', ns:'testing', name:'ms-ocp-integracion-au-resourceorder-camel', pods:0, testing:false, cases:[] },
+        { id:'new-event', ns:'testing', name:'ms-integracion-eventorchestrator', pods:1, testing:false, cases:[] },
+        { id:'new-openid', ns:'testing-diversificacion', name:'ms-ocp-integracion-openid-retrieveuserprofile-camel', pods:1, testing:false, cases:[] },
+        { id:'new-unified', ns:'testing-diversificacion', name:'ms-ocp-integracion-partyeventunified-camel', pods:0, testing:false, cases:[] },
+        { id:'new-zero', ns:'testing-matrix', name:'ms-ocp-integracion-matrix-zerodiagnosis-camel', pods:1, testing:false, cases:[] },
+        { id:'new-usage', ns:'testing-matrix', name:'ms-ocp-matrix-usageconsumption-camel', pods:1, testing:false, cases:[] },
+        { id:'new-retention', ns:'testing-matrix', name:'ms-ocp-integracion-matrix-frequentretentiondiscountcaller-camel', pods:0, testing:false, cases:[] }
+        ,{ id:'new-create-start', ns:'testing-diversificacion', name:'ms-ocp-integracion-createstartreqbyvaluev1-camel', pods:1, testing:false, cases:[] }
+      ];
+      const cases = [
+        { id:'CP-001', title:'Alta producto fija FTTH monoInternet · CRM → CMS', meta:['CRM','CMS','Orden creada'], elements:['CRM','OMS','SVO','BUS','API On-premise','Agendador'], services:['scoring','validate','address','serviceability','availability','appointment','daa'] },
+        { id:'CP-002', title:'Alta producto fija FTTH monoInternet · CRM → Pangea', meta:['CRM','Pangea','Orden creada'], elements:['CRM','OMS','SVO','API Azure','Pangea','Agendador'], services:['scoring','validate','serviceability','availability','appointment','daa','pangea'] },
+        { id:'CP-003', title:'Alta producto fija FTTH monoInternet · DITO → CMS', meta:['DITO','CMS','Orden creada'], elements:['DITO','API On-premise','OMS','SVO','CMS'], services:['validate','address','serviceability','availability','appointment','daa'] },
+        { id:'CP-004', title:'Modificación de velocidad de producto FTTH', meta:['CRM','OMS','Modificación'], elements:['CRM','OMS','API On-premise','Matrix'], services:['serviceability','matrix-catalog','matrix-status'] },
+        { id:'CP-005', title:'Agendamiento de reparación de servicio fijo', meta:['Front atención','Agendador','Reparación'], elements:['Front atención','API Azure','Agendador','Workforce'], services:['appointment','appointment-detail','repair'] },
+        { id:'CP-006', title:'Cancelación de orden de alta FTTH', meta:['CRM','SVO','Cancelación'], elements:['CRM','OMS','SVO','BUS'], services:['cancel-order','cancel-ticket','cancel-device'] }
+      ];
+
+      const state = { view:'impact', caseQuery:'', elementQuery:'', viewQuery:'', openCase:'CP-001', openImpact:'appointment', notice:'', focusField:null };
+      const byService = id => services.find(service => service.id === id);
+      const byCase = id => cases.find(item => item.id === id);
+      const heading = root.querySelector('#imHeading');
+      const notice = root.querySelector('#imNotice');
+      const filters = root.querySelector('#imFilters');
+      const resultsHead = root.querySelector('#imResultsHead');
+      const content = root.querySelector('#imContent');
+      const normalize = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      const escapeHtml = value => String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
+      const distance = (a,b) => { const t=Array.from({length:a.length+1},(_,i)=>[i]); for(let j=0;j<=b.length;j+=1)t[0][j]=j; for(let i=1;i<=a.length;i+=1)for(let j=1;j<=b.length;j+=1)t[i][j]=Math.min(t[i-1][j]+1,t[i][j-1]+1,t[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return t[a.length][b.length]; };
+      const fuzzy = (query,text) => { const q=normalize(query); if(!q)return true; const target=normalize(text); if(target.includes(q))return true; const qw=q.split(/\s+/).filter(Boolean), tw=target.split(/\s+/).filter(Boolean); return qw.every(word=>tw.some(candidate=>distance(word,candidate)<=(word.length>6?2:1))); };
+      const ocpBase = 'https://console-openshift-console.apps.ocpnprod7.gp.inet';
+      const ocpUrl = service => `${ocpBase}/k8s/ns/${encodeURIComponent(service.ns)}/deployments/${encodeURIComponent(service.name)}`;
+
+      const namespace = value => `<span class="im-namespace">${escapeHtml(value)}</span>`;
+      const podState = service => `<span class="im-state ${service.pods ? 'is-on' : 'is-off'}">${service.pods ? 'Encendido' : 'Apagado'}</span>`;
+      const testingControl = service => `<label class="im-testing ${service.testing ? 'is-active' : ''}"><input type="checkbox" data-testing="${service.id}" ${service.testing ? 'checked' : ''}>En pruebas</label>`;
+      const ocpLink = service => `<a class="im-ocp-link" href="${ocpUrl(service)}" target="_blank" rel="noopener noreferrer">Abrir OCP <i data-lucide="external-link" aria-hidden="true"></i></a>`;
+      const serviceNameLink = service => `<a class="im-service-name im-service-link" href="${ocpUrl(service)}" target="_blank" rel="noopener noreferrer">${escapeHtml(service.name)}</a>`;
+      const testingNote = service => service.testing ? `<small class="im-testing-note">Marcado por ${escapeHtml(service.testingBy || 'Tú')} · otros usuarios verán esta advertencia</small>` : '';
+      const serviceRow = service => `<div class="im-service-row">${serviceNameLink(service)}${namespace(service.ns)}<span class="im-pods">${service.pods ? '1/1' : '0/1'}</span>${podState(service)}${testingControl(service)}${ocpLink(service)}${testingNote(service)}</div>`;
+
+      function updateChrome() {
+        root.querySelector('#imCasesCount').textContent = cases.length;
+        root.querySelector('#imUnmappedCount').textContent = services.filter(service => !service.cases.length).length;
+        root.querySelector('#imImpactCount').textContent = services.filter(service => service.cases.length).length;
+        const testingCount = services.filter(service => service.testing).length;
+        root.querySelector('#imLiveTesting').textContent = `${testingCount} ${testingCount === 1 ? 'microservicio en pruebas' : 'microservicios en pruebas'}`;
+        root.querySelectorAll('.im-tab').forEach(tab => tab.setAttribute('aria-selected', String(tab.dataset.view === state.view)));
+      }
+
+      function renderCases() {
+        heading.innerHTML = `<div class="im-heading-copy"><p class="im-kicker">ESCENARIOS</p><h1>Casos de prueba</h1><p>Busca un escenario y consulta sus microservicios requeridos.</p></div><span class="im-mode">Acceso a OpenShift</span>`;
+        filters.innerHTML = `<div class="im-filters"><label class="im-field"><span>Nombre del caso de prueba</span><span class="im-input"><i data-lucide="search" aria-hidden="true"></i><input id="imCaseQuery" type="search" value="${escapeHtml(state.caseQuery)}" placeholder="Ej. Alta FTTH"></span></label><label class="im-field"><span>Elemento o microservicio</span><span class="im-input"><i data-lucide="layers-3" aria-hidden="true"></i><input id="imElementQuery" type="search" value="${escapeHtml(state.elementQuery)}" placeholder="Ej. API Azure o validateaddress"></span></label></div>`;
+        const visible = cases.filter(item => fuzzy(state.caseQuery,item.title) && fuzzy(state.elementQuery,[...item.elements,...item.services.map(id=>byService(id).name)].join(' ')));
+        resultsHead.innerHTML = `<strong>Escenarios encontrados</strong><span>${visible.length} de ${cases.length}</span>`;
+        content.innerHTML = visible.length ? visible.map(item => {
+          const open = item.id === state.openCase;
+          return `<article class="im-scenario ${open?'is-open':''}"><button class="im-scenario-trigger" type="button" data-open-case="${item.id}" aria-expanded="${open}"><span><small class="im-case-id">${item.id}</small><span class="im-case-title">${escapeHtml(item.title)}</span><span class="im-case-meta">${item.meta.map(value=>`<span>${escapeHtml(value)}</span>`).join('')}</span></span><i class="im-chevron" data-lucide="chevron-down" aria-hidden="true"></i></button><div class="im-case-detail"><div class="im-service-table"><div class="im-service-row im-service-header"><span>Microservicio</span><span>Namespace</span><span>Réplicas</span><span>Estado</span><span>En pruebas</span><span>OpenShift</span></div>${item.services.map(id=>serviceRow(byService(id))).join('')}</div></div></article>`;
+        }).join('') : `<div class="im-empty">No hay coincidencias.</div>`;
+        root.querySelector('#imCaseQuery').addEventListener('input', event => { state.caseQuery=event.target.value; state.focusField='case'; render(); });
+        root.querySelector('#imElementQuery').addEventListener('input', event => { state.elementQuery=event.target.value; state.focusField='element'; render(); });
+      }
+
+      function renderUnmapped() {
+        heading.innerHTML = `<div class="im-heading-copy"><p class="im-kicker">INVENTARIO PENDIENTE</p><h1>Microservicios sin flujo identificado</h1><p>Están en el inventario OCP, pero todavía no aparecen asociados a ningún caso de prueba.</p></div>`;
+        filters.innerHTML = `<div class="im-filters is-single"><label class="im-field"><span>Buscar microservicio o namespace</span><span class="im-input"><i data-lucide="search" aria-hidden="true"></i><input id="imViewQuery" type="search" value="${escapeHtml(state.viewQuery)}" placeholder="Ej. matrix o partyevent"></span></label></div>`;
+        const all = services.filter(service=>!service.cases.length);
+        const visible = all.filter(service=>fuzzy(state.viewQuery,`${service.name} ${service.ns}`));
+        resultsHead.innerHTML = `<strong>Pendientes de relacionar</strong><span>${visible.length} de ${all.length}</span>`;
+        content.innerHTML = visible.length ? visible.map(service=>`<div class="im-unmapped-row"><div class="im-unmapped-main"><span class="im-unmapped-name">${serviceNameLink(service)}<small class="im-new-label">Sin casos asociados</small></span>${namespace(service.ns)}<span class="im-pods">${service.pods?'1/1':'0/1'}</span>${testingControl(service)}${ocpLink(service)}${testingNote(service)}</div></div>`).join('') : `<div class="im-empty">No hay coincidencias.</div>`;
+        root.querySelector('#imViewQuery').addEventListener('input', event=>{state.viewQuery=event.target.value;state.focusField='view';render();});
+      }
+
+      function renderImpact() {
+        heading.innerHTML = `<div class="im-heading-copy"><p class="im-kicker">ANÁLISIS INVERSO</p><h1>Impacto al apagar un microservicio</h1><p>Ordenados por la cantidad de casos de prueba que dependen de cada uno.</p></div>`;
+        filters.innerHTML = `<div class="im-filters is-single"><label class="im-field"><span>Buscar microservicio o caso afectado</span><span class="im-input"><i data-lucide="search" aria-hidden="true"></i><input id="imViewQuery" type="search" value="${escapeHtml(state.viewQuery)}" placeholder="Ej. serviceability o CP-003"></span></label></div>`;
+        const ranked = services.filter(service=>service.cases.length).sort((a,b)=>b.cases.length-a.cases.length || a.name.localeCompare(b.name));
+        const visible = ranked.filter(service=>fuzzy(state.viewQuery,`${service.name} ${service.ns} ${service.cases.map(id=>`${id} ${byCase(id).title}`).join(' ')}`));
+        resultsHead.innerHTML = `<strong>Dependencias identificadas</strong><span>${visible.length} microservicios</span>`;
+        content.innerHTML = visible.length ? visible.map((service,index)=>{
+          const open=service.id===state.openImpact;
+          return `<article class="im-impact-row ${open?'is-open':''}"><div class="im-impact-main"><button class="im-impact-trigger" type="button" data-open-impact="${service.id}" aria-expanded="${open}"><span class="im-rank">#${index+1}</span><span class="im-service-name">${escapeHtml(service.name)}</span>${namespace(service.ns)}<span class="im-impact-count"><strong>${service.cases.length}</strong> casos</span><i class="im-chevron" data-lucide="chevron-down" aria-hidden="true"></i></button><div class="im-impact-state">${podState(service)}</div><div class="im-impact-test">${testingControl(service)}</div><div class="im-impact-ocp">${ocpLink(service)}</div></div><div class="im-impact-detail"><strong>Casos que podrían verse afectados</strong><div class="im-affected">${service.cases.map(id=>`<span>${id} · ${escapeHtml(byCase(id).title)}</span>`).join('')}</div>${service.testing?`<small class="im-testing-note">Actualmente en pruebas por ${escapeHtml(service.testingBy || 'Tú')}</small>`:''}</div></article>`;
+        }).join('') : `<div class="im-empty">No hay coincidencias.</div>`;
+        root.querySelector('#imViewQuery').addEventListener('input', event=>{state.viewQuery=event.target.value;state.focusField='view';render();});
+      }
+
+      function bindActions() {
+        root.querySelectorAll('[data-open-case]').forEach(button=>button.addEventListener('click',()=>{state.openCase=state.openCase===button.dataset.openCase?null:button.dataset.openCase;render();}));
+        root.querySelectorAll('[data-open-impact]').forEach(button=>button.addEventListener('click',()=>{state.openImpact=state.openImpact===button.dataset.openImpact?null:button.dataset.openImpact;render();}));
+        root.querySelectorAll('[data-testing]').forEach(input=>input.addEventListener('change',event=>{event.stopPropagation();const service=byService(input.dataset.testing);service.testing=input.checked;service.testingBy=input.checked?'Tú · ahora':'';state.notice=input.checked?`${service.name} quedó marcado como “En pruebas”.`:`Se retiró la marca de pruebas de ${service.name}.`;render();}));
+      }
+
+      function render() {
+        updateChrome();
+        notice.className=`im-notice ${state.notice?'is-visible':''}`;
+        notice.innerHTML=state.notice?`<i data-lucide="triangle-alert" aria-hidden="true"></i><span>${escapeHtml(state.notice)}</span>`:'';
+        if(state.view==='cases')renderCases();
+        if(state.view==='unmapped')renderUnmapped();
+        if(state.view==='impact')renderImpact();
+        bindActions();
+        const focusSelectors={case:'#imCaseQuery',element:'#imElementQuery',view:'#imViewQuery'};
+        const focusTarget=state.focusField?root.querySelector(focusSelectors[state.focusField]):null;
+        if(focusTarget){focusTarget.focus();focusTarget.setSelectionRange(focusTarget.value.length,focusTarget.value.length);}
+        state.focusField=null;
+        if(window.lucide)lucide.createIcons({attrs:{width:16,height:16}});
+      }
+
+      root.querySelectorAll('.im-tab').forEach(tab=>tab.addEventListener('click',()=>{state.view=tab.dataset.view;state.viewQuery='';state.notice='';render();}));
+      render();
+    })();
+  </script>
+</div>

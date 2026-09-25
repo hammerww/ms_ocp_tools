@@ -1,0 +1,15 @@
+package com.ocptools.domain;
+
+public enum ToolStatus {
+    CMS_NOT_FOUND,
+    ENVIRONMENT_FOUND,
+    ENVIRONMENT_NOT_FOUND,
+    REGISTER_SUCCESS,
+    REGISTER_FAILED,
+    REGISTER_UNVERIFIED,
+    QUERY_ERROR,
+    DATABASE_ERROR,
+    TIMEOUT,
+    INVALID_REQUEST
+}
+

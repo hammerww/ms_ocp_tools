@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OCP Tools</title>
+    <link rel="icon" type="image/png" href="/favicon.png?v=0.7.2-20260925">
+    <link rel="stylesheet" href="/styles.css?v=0.7.2-20260925">
+    <link rel="stylesheet" href="/flow-modal.css?v=0.7.2-20260925">
+</head>
+<body>
+<header class="app-header">
+    <div><p class="eyebrow">Plataforma operativa</p><h1>OCP Tools</h1></div>
+    <label class="tool-picker"><span>Vista actual</span><select id="tool-select" aria-label="Seleccionar herramienta">
+        <option value="ocp-map">Mapa operativo OCP</option>
+        <optgroup label="Utilidades operativas">
+            <option value="cms">Validación CMS / Ambiente</option>
+            <option value="tcp-check">Validación TCP / Conectividad</option>
+        </optgroup>
+    </select></label>
+</header>
+
+<main>
+    <section id="ocp-map-tool" class="tool-view">
+        <div class="map-heading">
+            <div>
+                <p class="eyebrow">Visibilidad operativa</p>
+                <h2 id="map-view-title">Servicios externos</h2>
+                <p id="map-view-subtitle" class="subtitle">Disponibilidad, tiempos de respuesta e incidentes de integraciones y backends.</p>
+            </div>
+            <button id="refresh-map" class="button secondary" type="button">Actualizar vista</button>
+        </div>
+        <div id="map-message" class="map-message hidden" role="status" aria-live="polite">Cargando inventario…</div>
+        <div id="external-message" class="map-message" role="status" aria-live="polite">Cargando servicios externos…</div>
+        <details id="namespace-summary" class="namespace-summary hidden">
+            <summary>Estado de namespaces <span id="namespace-summary-text">Cargando…</span></summary>
+            <div id="namespace-freshness" class="freshness-grid" aria-label="Última lectura por namespace"></div>
+        </details>
+        <div class="map-toolbar">
+            <div class="inner-tabs" role="tablist">
+                <button class="inner-tab active" data-tab="external" role="tab">Servicios externos</button>
+                <button class="inner-tab" data-tab="cases" role="tab">Casos de prueba</button>
+                <button class="inner-tab" data-tab="deployments" role="tab">Microservicios <span id="deployments-count">0</span></button>
+                <button class="inner-tab" data-tab="unmapped" role="tab">Sin flujo <span id="unmapped-count">0</span></button>
+                <button class="inner-tab" data-tab="impact" role="tab">Impacto</button>
+            </div>
+            <div id="ocp-map-filters" class="map-filters hidden">
+                <input id="map-case-search" type="search" placeholder="Buscar caso…" aria-label="Buscar caso">
+                <input id="map-element-search" type="search" placeholder="Buscar elemento…" aria-label="Buscar elemento funcional">
+                <input id="map-search" type="search" placeholder="Buscar deployment…" aria-label="Buscar deployment">
+                <select id="map-namespace" aria-label="Filtrar namespace"><option value="">Todos los namespaces</option></select>
+                <select id="map-state" aria-label="Filtrar estado">
+                    <option value="">Todos los estados</option><option value="ENCENDIDO">Encendidos</option>
+                    <option value="APAGADO">Apagados</option><option value="DESCONOCIDO">Desconocidos</option>
+                </select>
+                <label class="compact-check"><input id="map-testing" type="checkbox"> En testing</label>
+            </div>
+            <div id="external-filters" class="external-filters">
+                <input id="external-search" type="search" placeholder="Buscar servicio, sistema, host o URL…" aria-label="Buscar servicio externo">
+                <select id="external-environment" aria-label="Filtrar ambiente"><option value="">Todos los ambientes</option></select>
+                <select id="external-status" aria-label="Filtrar estado"><option value="">Todos los estados</option><option value="UP">Operativos</option><option value="WARNING">Advertencia</option><option value="DOWN">Caídos</option><option value="UNKNOWN">Sin datos</option></select>
+                <button id="external-unlock" class="button secondary compact-button" type="button">Desbloquear gestión</button>
+                <div id="external-admin-actions" class="external-admin-actions hidden">
+                    <button id="external-add" class="button primary compact-button" type="button">Nuevo servicio</button>
+                    <button id="external-credentials" class="button secondary compact-button" type="button">Credenciales</button>
+                    <button id="external-export" class="button secondary compact-button" type="button">Exportar KDBX</button>
+                </div>
+            </div>
+        </div>
+        <div id="external-panel" class="map-panel" role="tabpanel"></div>
+        <div id="cases-panel" class="map-panel hidden" role="tabpanel"></div>
+        <div id="deployments-panel" class="map-panel hidden" role="tabpanel"></div>
+        <div id="unmapped-panel" class="map-panel hidden" role="tabpanel"></div>
+        <div id="impact-panel" class="map-panel hidden" role="tabpanel"></div>
+    </section>
+
+    <section id="cms-tool" class="tool-view hidden">
+        <section class="tool-card" aria-labelledby="tool-title">
+            <p class="eyebrow">Utilidad operativa</p>
+            <h2 id="tool-title">Validación CMS / Ambiente</h2>
+            <p class="subtitle">Consulta una AccessID y evita registros duplicados entre ambientes PMX.</p>
+            <form id="validation-form" novalidate>
+                <div class="form-grid">
+                    <label><span>AccessID</span><input id="access-id" name="accessId" type="text" maxlength="64" pattern="[A-Za-z0-9]+" autocomplete="off" placeholder="Ej. 1400068580" required><small>Solo letras y números.</small></label>
+                    <label><span>Ambiente destino</span><select id="environment" name="environment" required disabled><option value="">Cargando ambientes…</option></select><small>El valor técnico se administra desde el ConfigMap.</small></label>
+                </div>
+                <div class="actions"><button id="validate-button" class="button primary" type="submit">Consultar</button><span id="request-state" class="request-state" role="status" aria-live="polite"></span></div>
+            </form>
+        </section>
+        <section id="result-card" class="result-card hidden" aria-labelledby="result-title" aria-live="polite">
+            <div class="result-header"><div><p class="eyebrow">Resultado</p><h2 id="result-title">Estado de la transacción</h2></div><span id="status-badge" class="status-badge"></span></div>
+            <p id="result-message" class="result-message"></p>
+            <dl class="details-grid">
+                <div><dt>AccessID</dt><dd id="detail-access-id">—</dd></div><div><dt>Fecha CMS</dt><dd id="detail-date">—</dd></div>
+                <div><dt>PID</dt><dd id="detail-pid">—</dd></div><div><dt>EXECID</dt><dd id="detail-exec-id">—</dd></div>
+                <div><dt>External ID</dt><dd id="detail-external-id">—</dd></div><div><dt>Ambiente encontrado</dt><dd id="detail-found-environment">—</dd></div>
+                <div><dt>Correlation ID</dt><dd id="detail-correlation-id">—</dd></div>
+            </dl>
+            <div id="register-panel" class="register-panel hidden"><div><strong>Registro disponible</strong><p>La ausencia fue confirmada. El registro requiere una acción explícita.</p></div><button id="register-button" class="button danger" type="button">Registrar</button></div>
+        </section>
+    </section>
+
+    <section id="tcp-check-tool" class="tool-view hidden">
+        <section class="tool-card" aria-labelledby="tcp-tool-title">
+            <p class="eyebrow">Utilidad operativa</p>
+            <h2 id="tcp-tool-title">Validación TCP / Conectividad</h2>
+            <p class="subtitle">Comprueba desde el pod de OCP Tools si una dirección IP acepta conexiones en el puerto indicado.</p>
+            <form id="tcp-check-form" novalidate>
+                <div class="form-grid">
+                    <label><span>IP destino</span><input id="tcp-ip" name="ip" type="text" maxlength="15" inputmode="decimal" autocomplete="off" placeholder="Ej. 10.10.71.174" required><small>Dirección IPv4. La conexión se origina desde el pod.</small></label>
+                    <label><span>Puerto</span><input id="tcp-port" name="port" type="number" min="1" max="65535" step="1" inputmode="numeric" placeholder="Ej. 8003" required><small>Timeout fijo de conexión: 10 segundos.</small></label>
+                </div>
+                <div class="actions"><button id="tcp-check-button" class="button primary" type="submit">Validar conexión</button><span id="tcp-request-state" class="request-state" role="status" aria-live="polite"></span></div>
+            </form>
+        </section>
+        <section id="tcp-result-card" class="result-card hidden" aria-labelledby="tcp-result-title" aria-live="polite">
+            <div class="result-header"><div><p class="eyebrow">Resultado</p><h2 id="tcp-result-title">Estado de la conexión</h2></div><span id="tcp-status-badge" class="status-badge"></span></div>
+            <p id="tcp-result-message" class="result-message"></p>
+            <dl class="details-grid">
+                <div><dt>IP</dt><dd id="tcp-detail-ip">—</dd></div><div><dt>Puerto</dt><dd id="tcp-detail-port">—</dd></div>
+                <div><dt>Duración</dt><dd id="tcp-detail-duration">—</dd></div><div><dt>Timeout</dt><dd id="tcp-detail-timeout">—</dd></div>
+                <div><dt>Fecha de validación</dt><dd id="tcp-detail-date">—</dd></div><div><dt>Correlation ID</dt><dd id="tcp-detail-correlation-id">—</dd></div>
+            </dl>
+        </section>
+    </section>
+</main>
+
+<dialog id="testing-dialog" class="testing-dialog">
+    <form id="testing-form">
+        <input id="testing-mode" type="hidden"><input id="testing-namespace-value" type="hidden"><input id="testing-name-value" type="hidden">
+        <h2 id="testing-dialog-title">Marcar en testing</h2><p id="testing-deployment-label" class="dialog-target"></p>
+        <label><span>Responsable</span><input id="testing-responsible" maxlength="120" required></label>
+        <label><span>Nota (opcional)</span><textarea id="testing-note" maxlength="500" rows="3"></textarea></label>
+        <label id="testing-expiry-label"><span>Expiración (opcional)</span><input id="testing-expiry" type="datetime-local"></label>
+        <div id="testing-error" class="dialog-error" role="alert"></div>
+        <div class="dialog-actions"><button id="testing-cancel" class="button secondary" type="button">Cancelar</button><button class="button primary" type="submit">Guardar</button></div>
+    </form>
+</dialog>
+
+<dialog id="case-note-dialog" class="testing-dialog case-note-dialog">
+    <div class="case-note-content">
+        <div class="dialog-heading"><div><p class="eyebrow">Anotación del caso</p><h2 id="case-note-title"></h2></div><button id="case-note-close" class="icon-button" type="button" aria-label="Cerrar">×</button></div>
+        <p id="case-note-text" class="case-note-text"></p>
+        <div class="dialog-actions"><button id="case-note-done" class="button secondary" type="button">Cerrar</button></div>
+    </div>
+</dialog>
+
+<dialog id="flow-dialog" class="flow-dialog" aria-label="Flujo del caso de prueba">
+    <iframe id="flow-frame" title="Flujo del caso de prueba"></iframe>
+</dialog>
+
+<dialog id="external-unlock-dialog" class="testing-dialog">
+    <form id="external-unlock-form">
+        <h2>Desbloquear gestión</h2>
+        <p class="dialog-target">La clave se valida en el servidor y habilita esta pestaña durante 15 minutos.</p>
+        <label><span>Clave maestra</span><input id="external-master-password" type="password" autocomplete="current-password" required></label>
+        <div id="external-unlock-error" class="dialog-error" role="alert"></div>
+        <div class="dialog-actions"><button id="external-unlock-cancel" class="button secondary" type="button">Cancelar</button><button class="button primary" type="submit">Desbloquear</button></div>
+    </form>
+</dialog>
+
+<dialog id="external-editor-dialog" class="external-editor-dialog">
+    <form id="external-editor-form">
+        <div class="dialog-heading sticky-heading"><div><p class="eyebrow">Servicios externos</p><h2 id="external-editor-title">Nuevo servicio</h2></div><button id="external-editor-close" class="icon-button" type="button" aria-label="Cerrar">×</button></div>
+        <input id="external-service-id" type="hidden">
+        <section class="external-form-section"><h3>Datos generales</h3><div class="external-form-grid">
+            <label><span>Nombre</span><input id="external-service-name" maxlength="200" required></label>
+            <label><span>Ambiente</span><input id="external-service-environment" maxlength="80" value="Testing" required></label>
+            <label><span>Sistema</span><input id="external-service-system" maxlength="160" required></label>
+            <label><span>Grupo</span><div class="field-with-action"><select id="external-service-group"><option value="">Sin grupo</option></select><button id="external-create-group" type="button" aria-label="Crear grupo">+</button></div></label>
+            <label class="full"><span>Descripción</span><textarea id="external-service-description" rows="3"></textarea></label>
+        </div></section>
+        <section class="external-form-section"><div class="section-heading"><div><h3>Pruebas de disponibilidad</h3><p>Se ejecutan en orden. Una prueba puede depender de la anterior.</p></div><button id="external-add-probe" class="button secondary compact-button" type="button">Agregar prueba</button></div><div id="external-probe-editor" class="probe-editor"></div></section>
+        <div id="external-editor-error" class="dialog-error" role="alert"></div>
+        <div class="dialog-actions sticky-actions"><button id="external-editor-cancel" class="button secondary" type="button">Cancelar</button><button class="button primary" type="submit">Guardar servicio</button></div>
+    </form>
+</dialog>
+
+<dialog id="external-credential-dialog" class="external-editor-dialog credential-dialog">
+    <div class="dialog-heading sticky-heading"><div><p class="eyebrow">Gestión protegida</p><h2>Credenciales</h2></div><button id="external-credential-close" class="icon-button" type="button" aria-label="Cerrar">×</button></div>
+    <div id="external-credential-list" class="credential-list"></div>
+    <form id="external-credential-form" class="external-form-section">
+        <input id="external-credential-id" type="hidden"><h3 id="external-credential-form-title">Nueva credencial</h3>
+        <div class="external-form-grid">
+            <label><span>Nombre</span><input id="credential-name" maxlength="160" required></label>
+            <label><span>Ambiente</span><input id="credential-environment" maxlength="80" value="Testing" required></label>
+            <label><span>Tipo</span><select id="credential-type"><option>DATABASE</option><option>HTTP</option><option>OAUTH</option><option>GENERAL</option></select></label>
+            <label><span>Sistema</span><input id="credential-system" maxlength="160" required></label>
+            <label><span>Usuario</span><input id="credential-username" autocomplete="off"></label>
+            <label><span>Contraseña</span><input id="credential-password" type="password" autocomplete="new-password" placeholder="Vacío conserva el valor"></label>
+            <label><span>Token / API key</span><input id="credential-token" type="password" autocomplete="off" placeholder="Vacío conserva el valor"></label>
+            <label><span>Client ID</span><input id="credential-client-id" autocomplete="off"></label>
+            <label><span>Client secret</span><input id="credential-client-secret" type="password" autocomplete="off" placeholder="Vacío conserva el valor"></label>
+        </div>
+        <div id="external-credential-error" class="dialog-error" role="alert"></div>
+        <div class="dialog-actions"><button id="external-credential-clear" class="button secondary" type="button">Limpiar</button><button class="button primary" type="submit">Guardar credencial</button></div>
+    </form>
+</dialog>
+
+<footer><span>OCP Tools</span><span>Proyecto OpenShift: testing-pmx3</span></footer>
+<script src="/app.js?v=0.7.2-20260925" defer></script>
+<script src="/external.js?v=0.7.2-20260925" defer></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flujo del caso · OCP Tools</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="stylesheet" href="/flow.css">
+</head>
+<body data-flow-mode="viewer">
+<header class="flow-topbar">
+    <a id="flow-exit" class="flow-button secondary" href="/">← Volver al mapa</a>
+    <div class="flow-heading"><span class="flow-kicker">Vista informativa</span><h1 id="flow-title">Cargando flujo…</h1></div>
+    <div class="flow-actions"><button id="play-flow" class="flow-button primary" type="button">▶ Reproducir</button><button id="reset-flow" class="flow-button secondary" type="button">↺ Reiniciar</button></div>
+</header>
+<main class="flow-layout viewer-layout">
+    <section class="flow-stage-wrap" aria-label="Diagrama del caso de prueba">
+        <div class="flow-canvas-controls" aria-label="Controles del lienzo">
+            <button id="zoom-out" class="flow-button secondary compact" type="button" aria-label="Alejar">−</button>
+            <span id="zoom-level" aria-live="polite">100%</span>
+            <button id="zoom-in" class="flow-button secondary compact" type="button" aria-label="Acercar">+</button>
+            <button id="fit-flow" class="flow-button secondary" type="button">Ajustar flujo</button>
+        </div>
+        <svg id="flow-stage" class="flow-stage" viewBox="0 0 1400 800" preserveAspectRatio="xMidYMid meet">
+            <defs><marker id="flow-arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 Z" fill="#91a4ad"></path></marker></defs>
+            <g id="flow-edges"></g><g id="flow-pulses"></g><g id="flow-nodes"></g><path id="flow-temp-edge" class="flow-temp-edge" hidden></path>
+        </svg>
+        <div id="flow-minimap" class="flow-minimap" aria-label="Minimapa del flujo"><svg viewBox="0 0 220 120"><g id="minimap-edges"></g><g id="minimap-nodes"></g><rect id="minimap-viewport"></rect></svg></div>
+        <div class="flow-status"><span id="flow-status-dot"></span><span id="flow-status-text">Preparando la visualización…</span></div>
+    </section>
+    <aside class="flow-sidebar viewer-sidebar">
+        <h2>Cómo leer el flujo</h2>
+        <div class="flow-card flow-legend"><span>La línea continua muestra la operación.</span><span>En una consulta, la línea discontinua muestra la respuesta automática.</span><span>Una operación continúa solo después de que la consulta anterior haya respondido.</span></div>
+        <div class="flow-card"><b>Importante</b><p>Esta animación solo representa el flujo guardado. No ejecuta acciones en los sistemas ni en OpenShift.</p></div>
+    </aside>
+</main>
+<script src="/flow.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Administración · Mapa operativo OCP</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/admin.css">
+    <link rel="stylesheet" href="/flow-modal.css">
+</head>
+<body>
+<header class="app-header admin-header">
+    <div><p class="eyebrow">Administración</p><h1>Mapa operativo OCP</h1></div>
+    <a class="button secondary link-button" href="/">Volver al mapa</a>
+</header>
+<main>
+    <div id="admin-message" class="map-message" role="status" aria-live="polite">Cargando catálogo…</div>
+    <section class="admin-summary" aria-label="Resumen del catálogo">
+        <article><strong id="summary-cases">—</strong><span>casos activos</span></article>
+        <article><strong id="summary-elements">—</strong><span>elementos activos</span></article>
+        <article><strong id="summary-deployments">—</strong><span>deployments descubiertos</span></article>
+        <article><strong id="summary-updated">—</strong><span>última actualización</span></article>
+    </section>
+    <div class="admin-toolbar">
+        <div class="inner-tabs" role="tablist">
+            <button class="inner-tab active" data-admin-tab="cases">Casos de prueba</button>
+            <button class="inner-tab" data-admin-tab="elements">Elementos</button>
+            <button class="inner-tab" data-admin-tab="archived">Archivados</button>
+        </div>
+        <div class="admin-actions">
+            <input id="admin-search" type="search" placeholder="Buscar…" aria-label="Buscar en administración">
+            <button id="new-case" class="button primary" type="button">Nuevo caso</button>
+            <button id="new-element" class="button secondary hidden" type="button">Nuevo elemento</button>
+        </div>
+    </div>
+    <section id="admin-list" class="admin-list"></section>
+</main>
+
+<dialog id="case-dialog" class="admin-dialog">
+    <form id="case-form">
+        <input id="case-id" type="hidden">
+        <input id="case-clone-source-id" type="hidden">
+        <div class="dialog-heading"><div><p class="eyebrow">Catálogo</p><h2 id="case-dialog-title">Nuevo caso de prueba</h2></div><button class="icon-button" data-close="case-dialog" type="button" aria-label="Cerrar">×</button></div>
+        <div class="admin-form-grid">
+            <label><span>Código</span><input id="case-code" maxlength="20" required placeholder="CP-001"><small id="latest-code-hint"></small></label>
+            <label><span>Orden</span><input id="case-order" type="number" min="0" value="0"></label>
+            <label class="wide"><span>Nombre</span><input id="case-name" maxlength="160" required></label>
+            <label class="wide"><span>Descripción</span><textarea id="case-description" rows="2"></textarea></label>
+            <label class="wide"><span>Anotación</span><textarea id="case-annotation" rows="6" placeholder="Troubleshooting, consideraciones y notas importantes del caso…"></textarea><small>Admite texto extenso y será visible, en modo lectura, desde el mapa.</small></label>
+            <label class="wide"><span>Detalles del caso</span><textarea id="case-metadata" rows="2" placeholder="Un detalle por línea"></textarea><small>Por ejemplo: CRM, Pangea, Orden creada.</small></label>
+        </div>
+        <section class="relation-editor"><div><h3>Elementos del caso</h3><small>Elementos de red o plataformas reutilizables.</small></div><div class="relation-filters single"><input id="element-search" type="search" placeholder="Buscar elemento…"></div><div id="case-elements" class="choice-list"></div></section>
+        <section class="relation-editor">
+            <div><h3>Microservicios del caso</h3><small>Solo se listan deployments descubiertos por el sensor OCP.</small></div>
+            <div class="relation-filters"><input id="deployment-search" type="search" placeholder="Buscar deployment…"><select id="deployment-namespace"><option value="">Todos los namespaces</option></select></div>
+            <div id="case-deployments" class="choice-list deployment-choices"></div>
+        </section>
+        <p id="case-error" class="dialog-error" role="alert"></p>
+        <div class="dialog-actions"><button class="button secondary" data-close="case-dialog" type="button">Cancelar</button><button class="button primary" type="submit">Guardar caso</button></div>
+    </form>
+</dialog>
+
+<dialog id="element-dialog" class="admin-dialog compact-dialog">
+    <form id="element-form">
+        <input id="element-id" type="hidden">
+        <div class="dialog-heading"><div><p class="eyebrow">Catálogo global</p><h2 id="element-dialog-title">Nuevo elemento</h2></div><button class="icon-button" data-close="element-dialog" type="button" aria-label="Cerrar">×</button></div>
+        <label><span>Nombre</span><input id="element-name" maxlength="200" required placeholder="CRM, BUS, DITO…"></label>
+        <label><span>Descripción</span><textarea id="element-description" rows="3"></textarea></label>
+        <label><span>Orden</span><input id="element-order" type="number" min="0" value="0"></label>
+        <p id="element-error" class="dialog-error" role="alert"></p>
+        <div class="dialog-actions"><button class="button secondary" data-close="element-dialog" type="button">Cancelar</button><button class="button primary" type="submit">Guardar elemento</button></div>
+    </form>
+</dialog>
+
+<dialog id="flow-dialog" class="flow-dialog" aria-label="Editor del flujo del caso de prueba">
+    <iframe id="flow-frame" title="Editor del flujo del caso de prueba"></iframe>
+</dialog>
+
+<footer><span>OCP Tools</span><span>Administración interna sin autenticación</span></footer>
+<script src="/admin.js" defer></script>
+</body>
+</html>

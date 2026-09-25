@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Editar flujo · OCP Tools</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="stylesheet" href="/flow.css">
+</head>
+<body data-flow-mode="editor">
+<header class="flow-topbar">
+    <a id="flow-exit" class="flow-button secondary" href="/admin">← Volver a administración</a>
+    <div class="flow-heading"><span class="flow-kicker">Administración</span><h1 id="flow-title">Cargando editor…</h1></div>
+    <div class="flow-actions"><button id="import-flow" class="flow-button secondary" type="button">Importar JSON</button><button id="export-flow" class="flow-button secondary" type="button">Exportar JSON</button><button id="play-flow" class="flow-button secondary" type="button">▶ Previsualizar</button><button id="reset-flow" class="flow-button secondary" type="button">↺ Reiniciar</button><button id="save-flow" class="flow-button primary" type="button">Guardar flujo</button><input id="import-flow-file" type="file" accept="application/json,.json" hidden></div>
+</header>
+<main class="flow-layout">
+    <section class="flow-stage-wrap" aria-label="Editor del diagrama del caso de prueba">
+        <div class="flow-canvas-controls" aria-label="Controles del lienzo">
+            <button id="zoom-out" class="flow-button secondary compact" type="button" aria-label="Alejar">−</button>
+            <span id="zoom-level" aria-live="polite">100%</span>
+            <button id="zoom-in" class="flow-button secondary compact" type="button" aria-label="Acercar">+</button>
+            <button id="fit-flow" class="flow-button secondary" type="button">Ajustar flujo</button>
+            <button id="toggle-flow-sidebar" class="flow-button secondary" type="button">Ocultar panel</button>
+        </div>
+        <svg id="flow-stage" class="flow-stage" viewBox="0 0 1400 800" preserveAspectRatio="xMidYMid meet">
+            <defs><marker id="flow-arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 Z" fill="#91a4ad"></path></marker></defs>
+            <g id="flow-edges"></g><g id="flow-pulses"></g><g id="flow-nodes"></g><path id="flow-temp-edge" class="flow-temp-edge" hidden></path>
+        </svg>
+        <div id="flow-minimap" class="flow-minimap" aria-label="Minimapa del flujo"><svg viewBox="0 0 220 120"><g id="minimap-edges"></g><g id="minimap-nodes"></g><rect id="minimap-viewport"></rect></svg></div>
+        <div class="flow-status"><span id="flow-status-dot"></span><span id="flow-status-text">Cargando catálogo…</span></div>
+    </section>
+    <aside class="flow-sidebar">
+        <section class="flow-card">
+            <h2>Agregar elemento</h2>
+            <label><span>Asociado al caso</span><select id="suggested-element"><option value="">Seleccione una sugerencia…</option></select></label>
+            <button id="add-suggested" class="flow-button secondary full" type="button">Agregar sugerencia</button>
+            <div class="flow-divider"><span>o</span></div>
+            <label><span>Elemento libre</span><input id="free-element-name" maxlength="200" placeholder="Nombre no registrado en catálogo"></label>
+            <button id="add-free" class="flow-button secondary full" type="button">Agregar elemento libre</button>
+        </section>
+        <section id="empty-properties" class="flow-card help-card"><h2>Propiedades</h2><p>Seleccione un elemento o una conexión. Puede abrir una conexión desde su línea, etiqueta o icono ✎. Arrastre los elementos para ordenarlos y el punto azul para conectarlos.</p></section>
+        <section id="node-properties" class="flow-card" hidden>
+            <h2>Elemento</h2>
+            <label><span>Nombre</span><input id="node-name" maxlength="200"></label>
+            <label><span>Detalle</span><textarea id="node-detail" maxlength="500" rows="4" placeholder="Qué realiza este elemento dentro del flujo"></textarea></label>
+            <div class="operation-heading"><span>Operaciones en orden</span><small>Use las flechas para definir qué ocurre primero.</small></div>
+            <div id="node-operations" class="operation-list"></div>
+            <button id="delete-node" class="flow-button danger full" type="button">Eliminar elemento</button>
+        </section>
+        <section id="edge-properties" class="flow-card" hidden>
+            <h2>Conexión</h2>
+            <label><span>Tipo</span><select id="edge-trigger"><option value="CONTINUE">Continuación</option><option value="QUERY">Consulta con respuesta</option></select></label>
+            <label><span>Operación</span><input id="edge-label" maxlength="200" placeholder="Ej. Consultar disponibilidad"></label>
+            <label id="edge-response-label"><span>Respuesta</span><input id="edge-response" maxlength="200" placeholder="Ej. Disponible"></label>
+            <button id="delete-edge" class="flow-button danger full" type="button">Eliminar conexión</button>
+        </section>
+    </aside>
+</main>
+<script src="/flow.js" defer></script>
+</body>
+</html>

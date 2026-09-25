@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ms-ocp-tools
+  namespace: testing-pmx3
+  labels:
+    app.kubernetes.io/name: ms-ocp-tools
+spec:
+  selector:
+    app.kubernetes.io/name: ms-ocp-tools
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
