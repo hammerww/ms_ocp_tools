@@ -1,7 +1,7 @@
 # Herramienta 04 — Servicios externos
 
 Fecha de vigencia: 2026-09-25  
-Estado: `0.7.1` desplegada y operativa; `0.7.2` implementada localmente, aún no desplegada
+Estado: `0.7.2` desplegada y operativa en `testing-pmx3`
 
 ## Objetivo
 
@@ -259,18 +259,19 @@ EXTERNAL_ADMIN_BLOCK_DURATION=15m
 
 Los cambios del ConfigMap requieren rollout/reinicio por el uso de `envFrom`.
 
-## Evolución 0.7.2 implementada, no desplegada
+## Evolución 0.7.2 desplegada
 
 - no crea tablas ni altera las existentes;
-- la versión desplegada sigue siendo `0.7.1` hasta autorización expresa;
-- el manifiesto fuente apunta a `0.7.2` y agrega la bandera TLS;
-- el rollback futuro es restaurar imagen y ConfigMap de `0.7.1`;
+- la imagen, el manifiesto y el Deployment apuntan a `0.7.2`;
+- el rollback es restaurar imagen y ConfigMap de `0.7.1`;
 - la exportación histórica cambia de un CSV agregado en navegador a un ZIP
   generado en servidor con resumen y ejecuciones;
 - las tarjetas KPI dejan de usar simultáneamente ventanas fijas 24 h/7 d y
   pasan a reflejar exactamente el selector histórico visible;
-- el target Docker superó 43 pruebas y la imagen runtime local se construyó
-  para `linux/amd64`; aún no se publicó ni desplegó.
+- el target Docker superó 43 pruebas y la imagen `linux/amd64` publicada y
+  ejecutada usa el digest
+  `sha256:98dcec1ac12ef434651218aed8e6884e292b55a04ecfccf7e177a68fd1b7fc95`;
+- el primer ciclo programado procesó los 28 servicios en 14,321 ms.
 
 ## Migración de la prueba de concepto
 

@@ -18,28 +18,19 @@ El procedimiento manual completo para construir, transportar, publicar,
 desplegar, validar y revertir una versión se encuentra en
 [`docs/context/infrastructure/MANUAL_DESPLIEGUE.md`](docs/context/infrastructure/MANUAL_DESPLIEGUE.md).
 
-La versión `0.7.1` está desplegada y operativa en `testing-pmx3`. Conserva las
-funciones de `0.7.0` —incluidos los flujos secuenciales, consultas anidadas,
-JSON, búsqueda de casos por Deployment y Servicios externos— y corrige KDBX,
-diferencia comprobaciones manuales y programadas, agrega `Historial y KPI` y
-activa el monitor automático cada 10 minutos. Su contrato completo está en
+La versión `0.7.2` está desplegada y operativa en `testing-pmx3`. Conserva las
+funciones de `0.7.1` y agrega HTTPS sin validación de certificados para el
+monitor externo, KPI por rango/servicio, selector personalizado de hasta 90
+días, máximo de 40 bloques y exportación ZIP con `resumen.csv` y
+`ejecuciones.csv`. Su contrato completo está en
 [`docs/context/tools/tool-04-external-services/CONTEXT.md`](docs/context/tools/tool-04-external-services/CONTEXT.md).
-Flyway V6 se aplicó de forma aditiva y conserva servicios, credenciales,
-ejecuciones y resultados. La imagen Linux `amd64` superó 39 pruebas y fue
-publicada con digest `sha256:24122926f0b929d63982ce1b384e489a87a7ebdd5781fba0ab75ff154421913e`.
-El primer ciclo programado procesó los 28 servicios en 13,017 segundos.
-`0.7.0`, acompañado por su ConfigMap con scheduler deshabilitado, es el rollback
-de aplicación recomendado.
-
-La versión `0.7.2` está implementada sólo en fuente y todavía no se ha
-desplegado. Agrega HTTPS sin validación de certificados para el monitor
-externo, KPI por rango/servicio, selector personalizado de hasta 90 días,
-máximo de 40 bloques y exportación ZIP con `resumen.csv` y `ejecuciones.csv`.
-El target Docker `test` superó 43 pruebas y la imagen runtime local se construyó
-correctamente para `linux/amd64`; ninguna imagen `0.7.2` se ha publicado ni
-desplegado.
-No contiene migraciones de base de datos; su rollback futuro es imagen y
-ConfigMap `0.7.1`.
+Flyway confirmó el esquema V6 sin ejecutar migraciones. La imagen Linux
+`amd64` superó 43 pruebas y se publicó con digest
+`sha256:98dcec1ac12ef434651218aed8e6884e292b55a04ecfccf7e177a68fd1b7fc95`.
+El primer ciclo programado de esta versión procesó los 28 servicios en 14,321
+segundos. `0.7.1`, junto con su imagen y ConfigMap conservados, es el rollback
+inmediato; no hay rollback de base de datos porque `0.7.2` no agrega
+migraciones.
 
 ## Decisiones de la beta
 

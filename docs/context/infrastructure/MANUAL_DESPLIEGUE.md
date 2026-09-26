@@ -840,7 +840,7 @@ Rollback de `0.7.1`:
 
 ## 13.3. Entrega `0.7.2` — TLS ligero y KPI por rango
 
-Estado documental: implementada en fuente, todavía no desplegada.
+Estado documental: desplegada y operativa en `testing-pmx3`.
 
 No agrega migraciones ni modifica datos existentes. Incorpora:
 
@@ -852,13 +852,18 @@ No agrega migraciones ni modifica datos existentes. Incorpora:
 - descarga ZIP con `resumen.csv` y `ejecuciones.csv`;
 - fondos de semáforo con texto oscuro legible.
 
-Validación local completada el 25 de septiembre de 2026:
+Validación local y despliegue completados el 25 de septiembre de 2026:
 
 - target Docker `test`: 43 pruebas, 0 fallos, 0 errores y 0 omitidas;
 - imagen runtime `ms-ocp-tools:0.7.2` construida para `linux/amd64`;
-- manifest local de la imagen:
+- digest local, publicado y ejecutado:
   `sha256:98dcec1ac12ef434651218aed8e6884e292b55a04ecfccf7e177a68fd1b7fc95`;
-- la imagen no fue publicada ni desplegada en OpenShift.
+- Deployment revisión 20, pod `1/1 Ready` y 0 reinicios;
+- health live/ready, vista principal, administración, mapa OCP, CMS, snapshot e
+  historial externo respondieron HTTP 200;
+- la exportación KPI de 24 horas respondió `application/zip` con HTTP 200;
+- primer ciclo programado: 28 servicios en 14,321 ms;
+- Flyway validó V6 y no ejecutó migraciones.
 
 El rollback de aplicación/configuración consiste en restaurar la imagen y el
 ConfigMap respaldados de `0.7.1`; no hay rollback de base de datos.

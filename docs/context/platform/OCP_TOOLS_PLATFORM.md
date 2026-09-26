@@ -160,10 +160,11 @@ Cada entrega debe incluir:
 - `0.7.1`: desplegada y operativa; corrige la descarga KDBX, diferencia
   resultados manuales y programados, expone KPI históricos y ejecuta el
   scheduler cada 10 minutos. Flyway V6 es compatible con `0.7.0` y no elimina
-  historial ni credenciales. `0.7.0` es el rollback inmediato.
-- `0.7.2`: implementada localmente y no desplegada; agrega la política TLS
+  historial ni credenciales.
+- `0.7.2`: desplegada y operativa; agrega la política TLS
   configurable del monitor, rangos KPI personalizados, máximo 40 bloques y
-  exportación ZIP con resumen y ejecuciones. No agrega migraciones.
+  exportación ZIP con resumen y ejecuciones. No agrega migraciones y `0.7.1`
+  es su rollback inmediato.
 - Los tags publicados deben ser inmutables.
 - No sobrescribir `0.1.0` ni desacoplar el rollback de imagen de su ConfigMap
   compatible.

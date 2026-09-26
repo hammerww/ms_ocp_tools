@@ -53,20 +53,16 @@ que no aparezcan confirmados en estos documentos.
 
 ## Estado resumido
 
-- `ms-ocp-tools:0.7.1` está desplegado y operativo en `testing-pmx3`; Flyway
-  quedó en V6, el pod está `1/1 Ready` y health/API pública responden HTTP 200.
-  La imagen superó 39 pruebas y ejecuta el digest
-  `sha256:24122926f0b929d63982ce1b384e489a87a7ebdd5781fba0ab75ff154421913e`.
-  El monitor está activo cada 10 minutos: su primer lote procesó los 28
-  servicios en 13,017 segundos y dejó 21 `UP` y 7 `WARNING`.
-- `0.7.0`, junto con su ConfigMap de scheduler deshabilitado, es el rollback
-  funcional inmediato. V6 es compatible y no requiere reversión física.
-- `0.7.2` está implementada localmente y aún no desplegada. No agrega
-  migraciones; incorpora TLS sin validación para destinos monitoreados, KPI por
-  rango/servicio y exportación ZIP de resumen más ejecuciones. El target Docker
-  superó 43 pruebas y la imagen runtime local quedó construida para
-  `linux/amd64`, sin publicación ni despliegue. Hasta su futuro despliegue, el
-  rollback continúa siendo `0.7.1`/`0.7.0` según el alcance.
+- `ms-ocp-tools:0.7.2` está desplegado y operativo en `testing-pmx3`; Flyway
+  conserva V6, el pod está `1/1 Ready` sin reinicios y health/API pública
+  responden HTTP 200. La imagen superó 43 pruebas y ejecuta el digest
+  `sha256:98dcec1ac12ef434651218aed8e6884e292b55a04ecfccf7e177a68fd1b7fc95`.
+  El monitor continúa activo cada 10 minutos, con TLS sin validación para los
+  destinos monitoreados; su primer lote procesó los 28 servicios en 14,321
+  segundos.
+- `0.7.1`, con su imagen y ConfigMap conservados, es el rollback funcional
+  inmediato. V6 no requiere reversión física porque `0.7.2` no incorpora
+  migraciones.
 - La Herramienta 01 debe conservarse operativa y sin regresiones.
 - La Herramienta 02 funciona con PostgreSQL persistente, sensor OCP, API y UI;
   el ServiceAccount confirmó lectura y ausencia de permisos modificatorios.
