@@ -25,7 +25,7 @@ final class ExternalTestConfig {
                     @Override public boolean tlsVerify() { return false; }
                     @Override public Duration interval() { return Duration.ofMinutes(10); }
                     @Override public Duration initialDelay() { return Duration.ZERO; }
-                    @Override public int parallelism() { return 2; }
+                    @Override public int parallelism() { return 1; }
                     @Override public Duration sessionDuration() { return Duration.ofMinutes(15); }
                     @Override public int maxUnlockFailures() { return 3; }
                     @Override public Duration unlockWindow() { return Duration.ofMinutes(5); }

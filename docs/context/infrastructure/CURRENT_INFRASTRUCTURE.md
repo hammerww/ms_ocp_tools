@@ -1,12 +1,12 @@
 # Infraestructura vigente — OCP Tools
 
-Fecha de evidencia: 2026-09-24
+Fecha de evidencia: 2026-09-26
 
 ## Plataforma desplegada
 
 ```text
 Aplicación:       ms-ocp-tools
-Versión desplegada: 0.7.0
+Versión desplegada: 0.7.3
 Cluster:          https://api.ocpnprod7.gp.inet:6443
 Proyecto:         testing-pmx3
 ImageStream:      ms-ocp-tools
@@ -18,7 +18,7 @@ Secret real:      tools
 Runtime:          Java 17 / Quarkus 3.33.3.1
 Estrategia:       Recreate
 Réplicas:         1
-Estado funcional: herramientas 01–04 operativas; scheduler de Herramienta 04 deshabilitado
+Estado funcional: herramientas 01–04 operativas; scheduler externo cada 10 min con paralelismo 1
 ```
 
 La UI y la Route funcionan desde la laptop corporativa dentro de la red
@@ -28,21 +28,20 @@ de validar el clúster el usuario debe ejecutar el login interactivo.
 
 ## Evidencia de imagen
 
-El digest efectivo de `0.7.0`, verificado durante el rollout del 2026-09-24,
+El digest efectivo de `0.7.3`, verificado durante el rollout del 2026-09-26,
 es:
 
 ```text
 image-registry.openshift-image-registry.svc:5000/
-  testing-pmx3/ms-ocp-tools@sha256:c2de3977cf013db4a6d8d4dbd325e15fb749c38fce751c47c04c5c9f03b0aacb
+  testing-pmx3/ms-ocp-tools@sha256:e30565fd54fed7809f6b02e9ba5dfe20f4a087dc0c4f379c34a8157abb1e1bd7
 ```
 
-La revisión del Deployment es 11. El pod quedó `1/1 Ready`, sin reinicios, y
-Flyway confirmó V1–V5. Los conteos de las tablas previas permanecieron iguales
-al respaldo pre-V5. Se importaron 28 servicios, 36 pruebas, 6 credenciales
-cifradas, 15 878 ejecuciones y 16 523 resultados históricos; 27 registros
-huérfanos de `BD Gfiscal |` se excluyeron por carecer de configuración vigente.
-El ConfigMap efectivo conserva `EXTERNAL_MONITOR_ENABLED=false` e intervalo de
-10 minutos. Los estados actuales siguen `UNKNOWN` hasta una medición en vivo.
+La revisión del Deployment es 21. El pod quedó `1/1 Ready`, sin reinicios, y
+Flyway confirmó V1–V6 sin migraciones pendientes. El ConfigMap conserva
+`EXTERNAL_MONITOR_ENABLED=true`, intervalo de 10 minutos y paralelismo 1. El
+primer ciclo de `0.7.3` procesó 30 servicios en 35,613 ms: 27 `UP` y 3 `DOWN`
+según sus destinos, con un reintento de timeout y sin errores de aplicación.
+Health, Route, UI y API pública respondieron HTTP 200.
 
 Respaldo postimportación verificado:
 

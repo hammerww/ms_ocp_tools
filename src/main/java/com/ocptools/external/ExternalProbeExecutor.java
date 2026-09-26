@@ -10,25 +10,29 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.annotation.PostConstruct;
 
+import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ConnectException;
+import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.NoRouteToHostException;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -39,10 +43,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ExternalProbeExecutor {
+    private static final Logger LOG = Logger.getLogger(ExternalProbeExecutor.class);
     private static final int MAX_HTTP_BODY = 1_048_576;
+    private static final int HTTP_ATTEMPTS = 2;
 
     @Inject
     ExternalRepository repository;
@@ -53,13 +60,10 @@ public class ExternalProbeExecutor {
     @Inject
     ToolsConfig config;
 
-    private HttpClient httpClient;
+    private SSLContext insecureSslContext;
 
     @PostConstruct
-    void initializeHttpClient() {
-        HttpClient.Builder builder = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .connectTimeout(Duration.ofSeconds(15));
+    void initializeHttpTransport() {
         if (!config.externalMonitor().tlsVerify()) {
             try {
                 TrustManager[] trustAll = {new X509TrustManager() {
@@ -69,16 +73,11 @@ public class ExternalProbeExecutor {
                 }};
                 SSLContext context = SSLContext.getInstance("TLS");
                 context.init(null, trustAll, new SecureRandom());
-                SSLParameters parameters = new SSLParameters();
-                // La cadena vacía impide que HttpClient añada "HTTPS" como verificador
-                // de nombre. Se aplica sólo a este cliente; SOAP CMS conserva su TLS normal.
-                parameters.setEndpointIdentificationAlgorithm("");
-                builder.sslContext(context).sslParameters(parameters);
+                insecureSslContext = context;
             } catch (Exception exception) {
-                throw new IllegalStateException("No se pudo configurar el cliente HTTPS del monitor", exception);
+                throw new IllegalStateException("No se pudo configurar el transporte HTTPS del monitor", exception);
             }
         }
-        httpClient = builder.build();
     }
 
     public Execution execute(ExternalRepository.ServiceDefinition service) {
@@ -128,48 +127,167 @@ public class ExternalProbeExecutor {
         long started = System.nanoTime();
         try {
             CredentialSecret credential = probe.credentialId() == null ? null : repository.credentialSecret(probe.credentialId());
-            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(probe.url()))
-                    .timeout(Duration.ofMillis(probe.timeoutMs()))
-                    .header("User-Agent", "OCP-Tools/0.7");
-            Map<String, String> headers = parseHeaders(expand(probe.requestHeaders(), credential));
-            headers.forEach(builder::header);
-            addAuthentication(builder, probe, credential, tokens);
+            Map<String, String> headers = new LinkedHashMap<>(parseHeaders(expand(probe.requestHeaders(), credential)));
+            headers.putIfAbsent("User-Agent", "OCP-Tools/0.7");
+            addAuthentication(headers, probe, credential, tokens);
             String method = probe.httpMethod() == null ? "GET" : probe.httpMethod().toUpperCase(Locale.ROOT);
             String expandedBody = expand(probe.requestBody(), credential);
-            HttpRequest.BodyPublisher body = expandedBody == null
-                    ? HttpRequest.BodyPublishers.noBody()
-                    : HttpRequest.BodyPublishers.ofString(expandedBody, StandardCharsets.UTF_8);
-            builder.method(method, body);
-            HttpResponse<InputStream> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofInputStream());
-            byte[] bytes;
-            try (InputStream stream = response.body()) {
-                bytes = stream.readNBytes(MAX_HTTP_BODY + 1);
-            }
-            if (bytes.length > MAX_HTTP_BODY) {
-                return outcome("DOWN", "HTTP_BODY", "La respuesta supera 1 MiB", started, response.statusCode(), null);
-            }
-            String responseBody = new String(bytes, StandardCharsets.UTF_8);
-            Set<Integer> expected = expectedStatuses(probe.expectedStatuses());
-            if (!expected.contains(response.statusCode())) {
-                return outcome("DOWN", "HTTP_STATUS", "HTTP " + response.statusCode() + " fuera de lo esperado",
-                        started, response.statusCode(), null);
-            }
-            if (probe.expectedBody() != null && !responseBody.contains(probe.expectedBody())) {
-                return outcome("DOWN", "HTTP_CONTENT", "La respuesta no contiene el texto esperado",
-                        started, response.statusCode(), null);
-            }
-            String token = null;
-            if ("TOKEN_HTTP".equals(probe.probeType())) {
-                token = jsonField(responseBody, probe.tokenJsonField());
-                if (token == null || token.isBlank()) {
-                    return outcome("DOWN", "TOKEN", "No se encontró el token en la respuesta",
-                            started, response.statusCode(), null);
+            for (int attempt = 1; attempt <= HTTP_ATTEMPTS; attempt++) {
+                try {
+                    HttpAttemptResponse response = sendHttp(probe, method, headers, expandedBody);
+                    return evaluateHttp(probe, response, started, attempt);
+                } catch (HttpAttemptException exception) {
+                    if (isTimeout(exception.getCause()) && attempt < HTTP_ATTEMPTS) {
+                        LOG.warnf("tool=external-monitor action=http-retry probeId=%d attempt=%d timeoutMs=%d phase=%s",
+                                probe.id(), attempt + 1, probe.timeoutMs(), exception.phase);
+                        continue;
+                    }
+                    return httpFailure(probe, exception, started, attempt);
                 }
             }
-            return outcome("UP", "HTTP", "Respuesta HTTP esperada", started, response.statusCode(), token);
+            return outcome("DOWN", "HTTP", "No se pudo completar la solicitud HTTP", started, null, null);
         } catch (Exception exception) {
-            return outcome("DOWN", "HTTP", safe(exception), started, null, null);
+            return outcome("DOWN", "HTTP_CONFIG", "Configuración HTTP inválida: " + safe(exception),
+                    started, null, null);
         }
+    }
+
+    private HttpAttemptResponse sendHttp(ProbeDefinition probe, String method, Map<String, String> headers,
+                                         String body) throws HttpAttemptException {
+        HttpURLConnection connection = null;
+        String phase = "HTTP_CONNECT";
+        Integer responseCode = null;
+        try {
+            connection = (HttpURLConnection) URI.create(probe.url()).toURL().openConnection();
+            connection.setConnectTimeout(probe.timeoutMs());
+            connection.setReadTimeout(probe.timeoutMs());
+            connection.setInstanceFollowRedirects(false);
+            connection.setRequestMethod(method);
+            headers.forEach(connection::setRequestProperty);
+            // Cada intento cierra su conexión para no heredar sockets persistentes degradados.
+            connection.setRequestProperty("Connection", "close");
+            if (connection instanceof HttpsURLConnection https && !config.externalMonitor().tlsVerify()) {
+                https.setSSLSocketFactory(insecureSslContext.getSocketFactory());
+                https.setHostnameVerifier((hostname, session) -> true);
+            }
+            byte[] payload = body == null ? null : body.getBytes(StandardCharsets.UTF_8);
+            if (payload != null) {
+                connection.setDoOutput(true);
+                connection.setFixedLengthStreamingMode(payload.length);
+            }
+            connection.connect();
+            if (payload != null) {
+                phase = "HTTP_WRITE";
+                try (OutputStream stream = connection.getOutputStream()) {
+                    stream.write(payload);
+                }
+            }
+            phase = "HTTP_RESPONSE";
+            responseCode = connection.getResponseCode();
+            InputStream raw = responseCode >= 400 ? connection.getErrorStream() : connection.getInputStream();
+            byte[] bytes = raw == null ? new byte[0] : readLimited(raw);
+            return new HttpAttemptResponse(responseCode, new String(bytes, StandardCharsets.UTF_8),
+                    bytes.length > MAX_HTTP_BODY);
+        } catch (Exception exception) {
+            throw new HttpAttemptException(phase, responseCode, exception);
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
+    }
+
+    private static byte[] readLimited(InputStream raw) throws IOException {
+        try (InputStream stream = raw) {
+            return stream.readNBytes(MAX_HTTP_BODY + 1);
+        }
+    }
+
+    private ProbeOutcome evaluateHttp(ProbeDefinition probe, HttpAttemptResponse response, long started, int attempt) {
+        String retry = attempt > 1 ? " · respuesta obtenida tras 1 reintento" : "";
+        if (response.bodyTooLarge) {
+            return outcome("DOWN", "HTTP_BODY", "La respuesta supera 1 MiB" + retry,
+                    started, response.statusCode, null);
+        }
+        Set<Integer> expected = expectedStatuses(probe.expectedStatuses());
+        if (!expected.contains(response.statusCode)) {
+            return outcome("DOWN", "HTTP_STATUS", "HTTP " + response.statusCode + " fuera de lo esperado" + retry,
+                    started, response.statusCode, null);
+        }
+        if (probe.expectedBody() != null && !response.body.contains(probe.expectedBody())) {
+            return outcome("DOWN", "HTTP_CONTENT", "La respuesta no contiene el texto esperado" + retry,
+                    started, response.statusCode, null);
+        }
+        String token = null;
+        if ("TOKEN_HTTP".equals(probe.probeType())) {
+            try {
+                token = jsonField(response.body, probe.tokenJsonField());
+            } catch (Exception exception) {
+                return outcome("DOWN", "TOKEN", "La respuesta del token no contiene JSON válido" + retry,
+                        started, response.statusCode, null);
+            }
+            if (token == null || token.isBlank()) {
+                return outcome("DOWN", "TOKEN", "No se encontró el token en la respuesta" + retry,
+                        started, response.statusCode, null);
+            }
+        }
+        return outcome("UP", "HTTP", "Respuesta HTTP esperada" + retry,
+                started, response.statusCode, token);
+    }
+
+    private static ProbeOutcome httpFailure(ProbeDefinition probe, HttpAttemptException failure,
+                                            long started, int attempts) {
+        Throwable cause = failure.getCause();
+        String phase = classifyHttpFailure(cause, failure.phase);
+        return outcome("DOWN", phase, httpFailureMessage(cause, phase, attempts, probe.timeoutMs()),
+                started, failure.responseCode, null);
+    }
+
+    private static String classifyHttpFailure(Throwable failure, String phase) {
+        if (hasCause(failure, SSLException.class)) return "HTTP_TLS";
+        if (hasCause(failure, UnknownHostException.class)) return "HTTP_DNS";
+        if (isTimeout(failure)) {
+            if ("HTTP_CONNECT".equals(phase)) return "HTTP_CONNECT_TIMEOUT";
+            if ("HTTP_WRITE".equals(phase)) return "HTTP_WRITE_TIMEOUT";
+            return "HTTP_RESPONSE_TIMEOUT";
+        }
+        if (hasCause(failure, ConnectException.class) || hasCause(failure, NoRouteToHostException.class)) {
+            return "HTTP_CONNECT";
+        }
+        if (hasCause(failure, IOException.class)) return "HTTP_IO";
+        return "HTTP";
+    }
+
+    private static String httpFailureMessage(Throwable failure, String phase, int attempts, int timeoutMs) {
+        if (phase.endsWith("_TIMEOUT")) {
+            String target = switch (phase) {
+                case "HTTP_CONNECT_TIMEOUT" -> "conexión";
+                case "HTTP_WRITE_TIMEOUT" -> "envío";
+                default -> "respuesta";
+            };
+            return "Tiempo de " + target + " agotado tras " + attempts + (attempts == 1 ? " intento" : " intentos")
+                    + " (" + timeoutMs + " ms por intento)";
+        }
+        if ("HTTP_TLS".equals(phase)) return "Error TLS: " + safe(failure);
+        if ("HTTP_DNS".equals(phase)) return "No se pudo resolver el host: " + safe(failure);
+        if ("HTTP_CONNECT".equals(phase)) return "No se pudo establecer la conexión: " + safe(failure);
+        if ("HTTP_IO".equals(phase)) return "Error de entrada/salida HTTP: " + safe(failure);
+        return safe(failure);
+    }
+
+    private static boolean isTimeout(Throwable failure) {
+        for (Throwable current = failure; current != null; current = current.getCause()) {
+            if (current instanceof SocketTimeoutException) return true;
+            String message = current.getMessage();
+            if (message != null && (message.toLowerCase(Locale.ROOT).contains("timed out")
+                    || message.toLowerCase(Locale.ROOT).contains("timeout"))) return true;
+        }
+        return false;
+    }
+
+    private static boolean hasCause(Throwable failure, Class<? extends Throwable> type) {
+        for (Throwable current = failure; current != null; current = current.getCause()) {
+            if (type.isInstance(current)) return true;
+        }
+        return false;
     }
 
     private ProbeOutcome database(ProbeDefinition probe) {
@@ -193,7 +311,7 @@ public class ExternalProbeExecutor {
         }
     }
 
-    private void addAuthentication(HttpRequest.Builder builder, ProbeDefinition probe, CredentialSecret credential,
+    private void addAuthentication(Map<String, String> headers, ProbeDefinition probe, CredentialSecret credential,
                                    Map<Long, String> tokens) {
         String type = probe.authType() == null ? "NONE" : probe.authType();
         if ("NONE".equals(type)) return;
@@ -202,15 +320,15 @@ public class ExternalProbeExecutor {
             String password = "OAUTH_CLIENT".equals(type) ? credential.clientSecret() : credential.password();
             String encoded = Base64.getEncoder().encodeToString((nullToEmpty(user) + ":" + nullToEmpty(password))
                     .getBytes(StandardCharsets.UTF_8));
-            builder.header("Authorization", "Basic " + encoded);
+            headers.put("Authorization", "Basic " + encoded);
         } else if ("BEARER".equals(type)) {
             String token = probe.dependsOnProbeId() == null ? null : tokens.get(probe.dependsOnProbeId());
             if (token == null && credential != null) token = firstPresent(credential.token(), credential.password());
-            builder.header("Authorization", "Bearer " + nullToEmpty(token));
+            headers.put("Authorization", "Bearer " + nullToEmpty(token));
         } else if ("API_KEY".equals(type)) {
             String header = firstPresent(probe.authHeader(), "X-API-Key");
             String value = credential == null ? "" : firstPresent(credential.token(), credential.password());
-            builder.header(header, nullToEmpty(value));
+            headers.put(header, nullToEmpty(value));
         }
     }
 
@@ -300,9 +418,9 @@ public class ExternalProbeExecutor {
                 Math.max(0, (System.nanoTime() - started) / 1_000_000), responseCode, token);
     }
 
-    private static String safe(Exception exception) {
-        String message = exception.getMessage();
-        if (message == null || message.isBlank()) message = exception.getClass().getSimpleName();
+    private static String safe(Throwable exception) {
+        String message = exception == null ? null : exception.getMessage();
+        if (message == null || message.isBlank()) message = exception == null ? "Error desconocido" : exception.getClass().getSimpleName();
         message = message.replaceAll("[\\r\\n\\t]", " ");
         return message.length() > 1000 ? message.substring(0, 1000) : message;
     }
@@ -315,5 +433,19 @@ public class ExternalProbeExecutor {
 
     private record ProbeOutcome(String status, String phase, String message, long durationMs,
                                 Integer responseCode, String token) {
+    }
+
+    private record HttpAttemptResponse(int statusCode, String body, boolean bodyTooLarge) {
+    }
+
+    private static final class HttpAttemptException extends Exception {
+        private final String phase;
+        private final Integer responseCode;
+
+        private HttpAttemptException(String phase, Integer responseCode, Throwable cause) {
+            super(cause);
+            this.phase = phase;
+            this.responseCode = responseCode;
+        }
     }
 }

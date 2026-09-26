@@ -1,7 +1,7 @@
 # Herramienta 04 — Servicios externos
 
-Fecha de vigencia: 2026-09-25  
-Estado: `0.7.2` desplegada y operativa en `testing-pmx3`
+Fecha de vigencia: 2026-09-26
+Estado: `0.7.3` desplegada y operativa en `testing-pmx3`
 
 ## Objetivo
 
@@ -14,7 +14,8 @@ La prueba de concepto Node ubicada en `modulo_monitor_elementos_externos` es
 solo fuente de migración. Node.js, sus archivos JSON/JSONL, el scheduler del
 navegador no forman parte de la arquitectura final. `0.7.2` admite de forma
 explícita certificados internos sin validar cadena ni nombre, manteniendo el
-canal HTTPS cifrado; la conducta es global y configurable.
+canal HTTPS cifrado. Desde `0.7.3`, esa excepción permanece acotada al
+transporte del monitor externo y continúa siendo configurable.
 
 ## Alcance de la primera entrega
 
@@ -126,12 +127,29 @@ Método declarativo, URL, headers no sensibles, body opcional, códigos esperado
 y texto que debe aparecer. El texto esperado usa `String.contains`: es una
 coincidencia literal y sensible a mayúsculas/minúsculas; no interpreta
 comodines, SQL LIKE ni expresiones regulares. Vacío valida sólo el código HTTP.
-Usa `java.net.http.HttpClient`; no ejecuta `curl` ni shell. No sigue redirecciones automáticamente, para evitar reenviar
+Usa `HttpURLConnection`/`HttpsURLConnection`; no ejecuta `curl` ni shell. No sigue redirecciones automáticamente, para evitar reenviar
 autenticación hacia otro destino; un `3xx` puede declararse como respuesta
 esperada. Los métodos permitidos son `GET`, `HEAD` y `POST`; se excluyen los
 verbos típicamente mutatorios. Limita la respuesta a 1 MiB. En testing,
 `EXTERNAL_MONITOR_TLS_VERIFY=false`: TLS continúa cifrando el tráfico, pero no
-se valida la cadena ni el nombre del certificado del destino.
+se valida la cadena ni el nombre del certificado del destino. Esta excepción
+se aplica únicamente al transporte HTTPS del monitor externo; no cambia el
+cliente SOAP CMS.
+
+Desde `0.7.3`, cada intento usa una conexión nueva y envía `Connection: close`
+para no reutilizar sockets persistentes degradados. Un timeout sin respuesta
+HTTP produce exactamente un segundo intento, también con conexión nueva. No se
+reintentan códigos HTTP, errores de contenido, DNS, conexión rechazada ni TLS.
+El tiempo máximo de una prueba que agote ambos intentos puede aproximarse a dos
+veces su timeout configurado. Los endpoints `POST` usados para monitoreo deben
+ser idempotentes: un timeout no garantiza que el destino no haya recibido la
+primera solicitud.
+
+El resultado persiste y muestra `responseCode` cuando el servidor alcanzó a
+responder. Los fallos sin respuesta se distinguen por fase:
+`HTTP_CONNECT_TIMEOUT`, `HTTP_WRITE_TIMEOUT`, `HTTP_RESPONSE_TIMEOUT`,
+`HTTP_TLS`, `HTTP_DNS`, `HTTP_CONNECT` o `HTTP_IO`. La UI antepone, por ejemplo,
+`HTTP 200` o `HTTP 400` al detalle de la comprobación manual o programada.
 
 ### TOKEN_HTTP
 
@@ -250,7 +268,7 @@ EXTERNAL_MONITOR_ENABLED=true   # configuración preparada para 0.7.1
 EXTERNAL_MONITOR_TLS_VERIFY=false
 EXTERNAL_MONITOR_INTERVAL=10m
 EXTERNAL_MONITOR_INITIAL_DELAY=30s
-EXTERNAL_MONITOR_PARALLELISM=4
+EXTERNAL_MONITOR_PARALLELISM=1
 EXTERNAL_ADMIN_SESSION_DURATION=15m
 EXTERNAL_ADMIN_MAX_FAILURES=5
 EXTERNAL_ADMIN_FAILURE_WINDOW=5m
@@ -258,6 +276,32 @@ EXTERNAL_ADMIN_BLOCK_DURATION=15m
 ```
 
 Los cambios del ConfigMap requieren rollout/reinicio por el uso de `envFrom`.
+
+## Evolución 0.7.3 desplegada
+
+- no crea tablas ni altera datos existentes;
+- reemplaza el cliente HTTP compartido por una conexión independiente por
+  intento y solicita su cierre explícito;
+- reintenta una sola vez exclusivamente los timeouts sin respuesta HTTP;
+- distingue timeout de conexión, escritura y respuesta, además de errores TLS,
+  DNS, conexión e I/O;
+- presenta en la UI el código HTTP persistido para ejecuciones manuales y
+  programadas;
+- la desactivación TLS se aplica solo a las conexiones HTTPS del monitor y no
+  cambia el cliente SOAP CMS;
+- alinea el ConfigMap versionado con `EXTERNAL_MONITOR_PARALLELISM=1`;
+- la imagen, el manifiesto y el Deployment apuntan a `0.7.3`;
+- el target Docker local `test` superó 47 pruebas, incluidas cuatro pruebas
+  específicas del nuevo transporte HTTP, sin fallos ni errores;
+- imagen publicada y ejecutada con digest
+  `sha256:e30565fd54fed7809f6b02e9ba5dfe20f4a087dc0c4f379c34a8157abb1e1bd7`;
+- Deployment revisión 21, pod `1/1 Ready`, 0 reinicios y health/UI/API pública
+  con HTTP 200;
+- primer ciclo: 30 servicios secuenciales en 35,613 ms; 27 `UP` y 3 `DOWN`,
+  con un único `action=http-retry` por timeout y sin errores de aplicación;
+- 23 resultados HTTP expusieron `responseCode` en el snapshot público;
+- rollback: restaurar imagen y ConfigMap `0.7.2`; no hay rollback de base de
+  datos.
 
 ## Evolución 0.7.2 desplegada
 

@@ -18,19 +18,19 @@ El procedimiento manual completo para construir, transportar, publicar,
 desplegar, validar y revertir una versión se encuentra en
 [`docs/context/infrastructure/MANUAL_DESPLIEGUE.md`](docs/context/infrastructure/MANUAL_DESPLIEGUE.md).
 
-La versión `0.7.2` está desplegada y operativa en `testing-pmx3`. Conserva las
-funciones de `0.7.1` y agrega HTTPS sin validación de certificados para el
-monitor externo, KPI por rango/servicio, selector personalizado de hasta 90
-días, máximo de 40 bloques y exportación ZIP con `resumen.csv` y
-`ejecuciones.csv`. Su contrato completo está en
+La versión `0.7.3` está desplegada y operativa en `testing-pmx3`. Conserva las
+funciones de `0.7.2` y estabiliza las sondas HTTP con una conexión nueva por
+intento, cierre explícito, un único reintento ante timeout, diagnóstico por
+fase y código HTTP visible. El monitor trabaja con un servicio en paralelo y
+mantiene su intervalo de 10 minutos. Su contrato completo está en
 [`docs/context/tools/tool-04-external-services/CONTEXT.md`](docs/context/tools/tool-04-external-services/CONTEXT.md).
 Flyway confirmó el esquema V6 sin ejecutar migraciones. La imagen Linux
-`amd64` superó 43 pruebas y se publicó con digest
-`sha256:98dcec1ac12ef434651218aed8e6884e292b55a04ecfccf7e177a68fd1b7fc95`.
-El primer ciclo programado de esta versión procesó los 28 servicios en 14,321
-segundos. `0.7.1`, junto con su imagen y ConfigMap conservados, es el rollback
-inmediato; no hay rollback de base de datos porque `0.7.2` no agrega
-migraciones.
+`amd64` superó 47 pruebas y se publicó con digest
+`sha256:e30565fd54fed7809f6b02e9ba5dfe20f4a087dc0c4f379c34a8157abb1e1bd7`.
+El primer ciclo programado procesó 30 servicios en 35,613 segundos; health,
+Route, UI y API pública respondieron HTTP 200 y el pod quedó sin reinicios.
+La imagen y el ConfigMap `0.7.2` son el rollback inmediato; no hay rollback de
+base de datos porque `0.7.3` no agrega migraciones.
 
 ## Decisiones de la beta
 

@@ -69,7 +69,7 @@ secrets.
 
 La configuración HTTP no permite guardar `Authorization`, cookies o API keys
 como headers en claro; debe referenciar una credencial cifrada. Para los
-destinos del monitor, `0.7.2` acepta el riesgo de
+destinos del monitor, `0.7.3` acepta el riesgo de
 `EXTERNAL_MONITOR_TLS_VERIFY=false`: HTTPS sigue cifrado, pero no se valida la
 cadena ni el nombre del certificado. Esta excepción no aplica a Maven,
 PostgreSQL, SOAP CMS, registry ni clientes ajenos al monitor y puede volver a

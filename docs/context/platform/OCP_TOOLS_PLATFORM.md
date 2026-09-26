@@ -165,6 +165,10 @@ Cada entrega debe incluir:
   configurable del monitor, rangos KPI personalizados, máximo 40 bloques y
   exportación ZIP con resumen y ejecuciones. No agrega migraciones y `0.7.1`
   es su rollback inmediato.
+- `0.7.3`: desplegada y operativa; estabiliza el transporte
+  HTTP del monitor con conexiones independientes, un reintento de timeout,
+  diagnóstico por fase y código HTTP visible. No agrega migraciones y su
+  rollback inmediato es `0.7.2`.
 - Los tags publicados deben ser inmutables.
 - No sobrescribir `0.1.0` ni desacoplar el rollback de imagen de su ConfigMap
   compatible.

@@ -119,7 +119,7 @@ function externalServiceCard(service) {
         const source = manualResult ? ' · comprobación manual' : '';
         return `<article class="external-probe-row">
             <span class="state-dot ${status.toLowerCase()}"></span>
-            <div><strong>${externalEscape(probe.name)}</strong><small>${externalEscape(probe.probeType)} · ${externalEscape(probeTarget(probe))}${probe.mandatory ? ' · obligatoria' : ' · informativa'}</small>${result ? `<small>${externalEscape(result.message || '')} · ${result.durationMs} ms${source}</small>` : '<small>Sin ejecución programada</small>'}</div>
+            <div><strong>${externalEscape(probe.name)}</strong><small>${externalEscape(probe.probeType)} · ${externalEscape(probeTarget(probe))}${probe.mandatory ? ' · obligatoria' : ' · informativa'}</small>${result ? `<small>${externalEscape(externalProbeResultDetail(result))} · ${result.durationMs} ms${source}</small>` : '<small>Sin ejecución programada</small>'}</div>
             <span class="external-probe-status ${status.toLowerCase()}">${statusLabel(status)}</span>
         </article>`;
     }).join('');
@@ -519,6 +519,12 @@ function duration(value) { return value == null ? '—' : `${value} ms`; }
 function statusLabel(status) { return ({ UP: 'Operativo', WARNING: 'Advertencia', DOWN: 'Caído', ERROR: 'Error', UNKNOWN: 'Sin datos', SKIPPED: 'Omitido' })[status] || status || 'Sin datos'; }
 function statusTone(status) { return status === 'ERROR' ? 'down' : String(status || 'UNKNOWN').toLowerCase(); }
 function manualProbeResult(run, probe) { return run?.results?.find((result) => result.probeId === probe.id || result.probeName === probe.name) || null; }
+function externalProbeResultDetail(result) {
+    const message = result?.message || '';
+    const code = Number.isInteger(result?.responseCode) ? `HTTP ${result.responseCode}` : '';
+    if (!code || message.toUpperCase().includes(code)) return message || code;
+    return `${code} · ${message}`;
+}
 function visibleExternalDescription(value) { return value === 'Migrado desde la prueba de concepto Node' ? '' : value; }
 function externalMonitorMessage(snapshot) {
     const monitor = snapshot.monitor;

@@ -868,6 +868,45 @@ Validación local y despliegue completados el 25 de septiembre de 2026:
 El rollback de aplicación/configuración consiste en restaurar la imagen y el
 ConfigMap respaldados de `0.7.1`; no hay rollback de base de datos.
 
+## 13.4. Entrega `0.7.3` — estabilización del monitor HTTP
+
+Estado documental: desplegada y operativa en `testing-pmx3`.
+
+No incorpora migraciones de Flyway. La entrega cambia únicamente el runtime y
+el ConfigMap:
+
+- una conexión nueva y con cierre explícito para cada intento HTTP;
+- un segundo y último intento solo cuando el primero termina en timeout sin
+  respuesta HTTP;
+- clasificación separada de timeout de conexión, escritura y respuesta, TLS,
+  DNS, conexión e I/O;
+- código HTTP visible en el detalle de cada sonda;
+- `EXTERNAL_MONITOR_PARALLELISM=1` en el manifiesto canónico.
+
+Antes de publicar, ejecutar el target Docker `test` y comprobar específicamente
+los tests de `ExternalProbeExecutorTest`. Después del rollout, validar una sonda
+que responda `200`, una que responda `400`, una que agote ambos intentos y otra
+que se recupere en el segundo intento. Confirmar en logs
+`action=http-retry` únicamente para timeouts.
+
+Validación completada el 26 de septiembre de 2026:
+
+- target Docker `test`: 47 pruebas, 0 fallos, 0 errores y 0 omitidas;
+- imagen runtime `linux/amd64` publicada y ejecutada con digest
+  `sha256:e30565fd54fed7809f6b02e9ba5dfe20f4a087dc0c4f379c34a8157abb1e1bd7`;
+- Deployment revisión 21, pod `1/1 Ready` y 0 reinicios;
+- health live/ready, Route, UI y snapshot público respondieron HTTP 200;
+- Flyway validó V6 sin migraciones pendientes;
+- primer ciclo: 30 servicios con paralelismo 1 en 35,613 ms, 27 `UP` y 3
+  `DOWN` según sus destinos;
+- un timeout de conexión ejecutó exactamente un reintento y quedó clasificado
+  como `HTTP_CONNECT_TIMEOUT` después de dos intentos;
+- 23 resultados HTTP conservaron su `responseCode` en la API pública y la UI
+  cargó el asset `external.js` de `0.7.3`.
+
+El rollback consiste en aplicar el ConfigMap respaldado y restaurar la imagen
+inmutable `0.7.2`. No ejecutar rollback de Flyway ni eliminar historial.
+
 ## 14. Criterio de finalización
 
 Una versión queda desplegada cuando se cumple todo lo siguiente:
