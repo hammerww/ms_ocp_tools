@@ -63,8 +63,10 @@ que no aparezcan confirmados en estos documentos.
   funcional inmediato. V6 es compatible y no requiere reversión física.
 - `0.7.2` está implementada localmente y aún no desplegada. No agrega
   migraciones; incorpora TLS sin validación para destinos monitoreados, KPI por
-  rango/servicio y exportación ZIP de resumen más ejecuciones. Hasta su futuro
-  despliegue, el rollback continúa siendo `0.7.1`/`0.7.0` según el alcance.
+  rango/servicio y exportación ZIP de resumen más ejecuciones. El target Docker
+  superó 43 pruebas y la imagen runtime local quedó construida para
+  `linux/amd64`, sin publicación ni despliegue. Hasta su futuro despliegue, el
+  rollback continúa siendo `0.7.1`/`0.7.0` según el alcance.
 - La Herramienta 01 debe conservarse operativa y sin regresiones.
 - La Herramienta 02 funciona con PostgreSQL persistente, sensor OCP, API y UI;
   el ServiceAccount confirmó lectura y ausencia de permisos modificatorios.

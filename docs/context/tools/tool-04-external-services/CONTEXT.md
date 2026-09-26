@@ -268,7 +268,9 @@ Los cambios del ConfigMap requieren rollout/reinicio por el uso de `envFrom`.
 - la exportación histórica cambia de un CSV agregado en navegador a un ZIP
   generado en servidor con resumen y ejecuciones;
 - las tarjetas KPI dejan de usar simultáneamente ventanas fijas 24 h/7 d y
-  pasan a reflejar exactamente el selector histórico visible.
+  pasan a reflejar exactamente el selector histórico visible;
+- el target Docker superó 43 pruebas y la imagen runtime local se construyó
+  para `linux/amd64`; aún no se publicó ni desplegó.
 
 ## Migración de la prueba de concepto
 

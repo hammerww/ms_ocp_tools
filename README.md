@@ -35,6 +35,9 @@ La versión `0.7.2` está implementada sólo en fuente y todavía no se ha
 desplegado. Agrega HTTPS sin validación de certificados para el monitor
 externo, KPI por rango/servicio, selector personalizado de hasta 90 días,
 máximo de 40 bloques y exportación ZIP con `resumen.csv` y `ejecuciones.csv`.
+El target Docker `test` superó 43 pruebas y la imagen runtime local se construyó
+correctamente para `linux/amd64`; ninguna imagen `0.7.2` se ha publicado ni
+desplegado.
 No contiene migraciones de base de datos; su rollback futuro es imagen y
 ConfigMap `0.7.1`.
 

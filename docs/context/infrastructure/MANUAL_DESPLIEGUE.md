@@ -852,8 +852,15 @@ No agrega migraciones ni modifica datos existentes. Incorpora:
 - descarga ZIP con `resumen.csv` y `ejecuciones.csv`;
 - fondos de semáforo con texto oscuro legible.
 
-Antes de desplegar, Docker debe estar activo y el target `test` debe pasar. El
-rollback de aplicación/configuración consiste en restaurar la imagen y el
+Validación local completada el 25 de septiembre de 2026:
+
+- target Docker `test`: 43 pruebas, 0 fallos, 0 errores y 0 omitidas;
+- imagen runtime `ms-ocp-tools:0.7.2` construida para `linux/amd64`;
+- manifest local de la imagen:
+  `sha256:98dcec1ac12ef434651218aed8e6884e292b55a04ecfccf7e177a68fd1b7fc95`;
+- la imagen no fue publicada ni desplegada en OpenShift.
+
+El rollback de aplicación/configuración consiste en restaurar la imagen y el
 ConfigMap respaldados de `0.7.1`; no hay rollback de base de datos.
 
 ## 14. Criterio de finalización
