@@ -4,6 +4,9 @@ import com.ocptools.external.ExternalModels.HistoryExecutionView;
 import com.ocptools.external.ExternalModels.HistorySummary;
 import com.ocptools.external.ExternalModels.HistoryView;
 import com.ocptools.external.ExternalModels.ServiceHistoryView;
+import com.ocptools.external.ExternalModels.DowntimeView;
+import com.ocptools.external.ExternalModels.ServiceDowntimeView;
+import com.ocptools.external.ExternalModels.DowntimeSegmentView;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -27,13 +30,23 @@ public class ExternalHistoryExportService {
     @Inject
     ExternalRepository repository;
 
+    @Inject
+    ExternalDowntimeService downtimeService;
+
     public ExportPayload export(ExternalHistoryRange range, Long serviceId) {
-        HistoryView history = repository.history(range, serviceId);
-        List<HistoryExecutionView> executions = repository.historyExecutions(range, serviceId);
+        return export(range, serviceId, null);
+    }
+
+    public ExportPayload export(ExternalHistoryRange range, Long serviceId, Long groupId) {
+        HistoryView history = repository.history(range, serviceId, groupId);
+        List<HistoryExecutionView> executions = repository.historyExecutions(range, serviceId, groupId);
+        DowntimeView downtime = downtimeService.downtime(range, serviceId, groupId);
         try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
              ZipOutputStream zip = new ZipOutputStream(bytes, StandardCharsets.UTF_8)) {
             add(zip, "resumen.csv", summaryCsv(history));
             add(zip, "ejecuciones.csv", executionsCsv(executions));
+            add(zip, "downtime-resumen.csv", downtimeSummaryCsv(downtime));
+            add(zip, "downtime-detalle.csv", downtimeDetailCsv(downtime));
             zip.finish();
             String filename = "kpi-servicios-externos-" + fileDate(range.from()) + "_" + fileDate(range.to()) + ".zip";
             return new ExportPayload(bytes.toByteArray(), filename);
@@ -74,6 +87,42 @@ public class ExternalHistoryExportService {
                     value(run.durationMs()), value(run.triggerSource())));
         }
         return csv(rows);
+    }
+
+    private static String downtimeSummaryCsv(DowntimeView downtime) {
+        List<List<?>> rows = new ArrayList<>();
+        rows.add(List.of("grupo_id", "grupo_proveedor", "servicio_id", "servicio", "ambiente", "sistema", "horario_aplicado",
+                "zona_horaria", "total_down_segundos", "total_down_horas", "justificado_segundos",
+                "justificado_horas"));
+        for (ServiceDowntimeView service : downtime.services()) {
+            rows.add(List.of(value(service.groupId()), value(service.groupName()), service.serviceId(),
+                    value(service.serviceName()), value(service.environment()), value(service.systemName()),
+                    value(service.scheduleLabel()), value(service.timezone()),
+                    service.totalDownSeconds(), decimalHours(service.totalDownSeconds()),
+                    service.justifiedSeconds(), decimalHours(service.justifiedSeconds())));
+        }
+        return csv(rows);
+    }
+
+    private static String downtimeDetailCsv(DowntimeView downtime) {
+        List<List<?>> rows = new ArrayList<>();
+        rows.add(List.of("grupo_id", "grupo_proveedor", "servicio_id", "servicio", "incidente_id", "desde_america_lima", "hasta_america_lima",
+                "duracion_segundos", "duracion_horas", "clasificacion", "estado_incidente", "ticket",
+                "solicitante", "nota"));
+        for (ServiceDowntimeView service : downtime.services()) {
+            for (DowntimeSegmentView segment : service.segments()) {
+                rows.add(List.of(value(service.groupId()), value(service.groupName()), service.serviceId(),
+                        value(service.serviceName()), segment.incidentId(),
+                        csvDate(segment.from()), csvDate(segment.to()), segment.durationSeconds(),
+                        decimalHours(segment.durationSeconds()), value(segment.category()), value(segment.incidentStatus()),
+                        value(segment.ticketReference()), value(segment.requestedBy()), value(segment.notes())));
+            }
+        }
+        return csv(rows);
+    }
+
+    private static String decimalHours(long seconds) {
+        return String.format(java.util.Locale.ROOT, "%.2f", seconds / 3600.0);
     }
 
     private static String csv(List<List<?>> rows) {

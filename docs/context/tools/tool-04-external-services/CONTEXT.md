@@ -1,7 +1,8 @@
 # Herramienta 04 — Servicios externos
 
-Fecha de vigencia: 2026-09-26
-Estado: `0.7.3` desplegada y operativa en `testing-pmx3`
+Fecha de vigencia: 2026-10-06
+Estado desplegado: `0.8.0` operativa en `testing-pmx3`
+Estado del código: `0.8.0`
 
 ## Objetivo
 
@@ -34,13 +35,14 @@ transporte del monitor externo y continúa siendo configurable.
 - vista pública histórica con rangos de 1 h, 6 h, 24 h, 7 días, 30 días o un
   rango personalizado de hasta 90 días; línea de tiempo de hasta 40 bloques,
   disponibilidad, media, p95, advertencias y caídas;
-- exportación ZIP del rango/servicio seleccionado con `resumen.csv` y el
-  detalle crudo de ejecuciones programadas en `ejecuciones.csv`;
+- exportación ZIP del rango/servicio/grupo seleccionado con el resumen, el
+  detalle crudo de ejecuciones y los reportes de downtime;
 - persistencia de ejecuciones, resultados e incidentes;
 - gestión de servicios, grupos y credenciales;
 - exportación KDBX agrupada `Ambiente → Tipo → Sistema`;
 - importador repetible de configuración e historial de la prueba de concepto;
-- archivado lógico de servicios y credenciales.
+- archivado lógico de servicios y credenciales, listado de archivados y
+  desarchivado protegido.
 
 Quedan fuera de esta entrega: ICMP/ping, autenticación personal, auditoría de
 rotación de clave maestra, notificaciones y despliegue automático.
@@ -205,7 +207,67 @@ bloques horizontales por servicio.
 
 El ZIP del rango contiene `resumen.csv` (total y resumen por servicio) y
 `ejecuciones.csv` (cada ejecución programada con estado, duración y fechas).
-Las ejecuciones manuales se excluyen de ambos archivos y de los KPI.
+Las ejecuciones manuales se excluyen de todos los archivos y de los KPI.
+
+## Evolución 0.8.0 desplegada
+
+La vista `Historial y KPI` contiene tres hojas con un mismo rango y filtros por
+grupo o servicio:
+
+1. `Sensado`: conserva los bloques de estado, alineados al extremo derecho para
+   que la posición más reciente sea consistente aunque un servicio tenga menos
+   muestras;
+2. `Downtime`: muestra los intervalos confirmados dentro del horario laboral;
+3. `Incidentes`: hace accesibles los estados `PENDING`, `OPEN` y `RECOVERED` y
+   sus clasificaciones.
+
+El cálculo de downtime parte exclusivamente de incidentes generados por
+ejecuciones programadas. Se conserva la hora del primer fallo, pero el reporte
+solo incorpora incidentes que llegaron a confirmarse. Una comprobación manual
+no abre, confirma, recupera ni acorta un incidente oficial.
+
+Cada grupo puede tener un horario con zona IANA, días laborables, hora inicial,
+hora final y excepciones por fecha. Un servicio puede sobrescribir el horario
+de su grupo. Sin configuración se aplica `America/Lima`, lunes a viernes de
+08:00 a 19:00. Solo la intersección entre incidente, rango consultado y horario
+laboral aporta duración al reporte.
+
+Los intervalos pueden clasificarse total o parcialmente, después de
+desbloquear la gestión con la clave maestra:
+
+```text
+UNPLANNED          rojo; suma en Total down
+REQUESTED_RESTART  azul; suma en Justificado y no en Total down
+PLANNED_WORK       azul; suma en Justificado y no en Total down
+```
+
+La anotación admite ticket, solicitante, responsable de confirmación y nota;
+no altera la evidencia cruda. Las barras solo imprimen duración cuando superan
+una hora. Las columnas finales separan `Total down` y `Justificado`. La precisión
+temporal está limitada por el intervalo de sensado (10 minutos por defecto).
+
+La gestión protegida incorpora `Archivados` y `Horarios`. Un servicio archivado
+queda fuera del scheduler, snapshot y KPI, pero conserva todo su historial y se
+puede desarchivar. Al restaurarlo vuelve como `UNKNOWN` y su estado se recalcula
+en el siguiente ciclo programado.
+
+La exportación ZIP de `0.8.0` contiene:
+
+```text
+resumen.csv
+ejecuciones.csv
+downtime-resumen.csv
+downtime-detalle.csv
+```
+
+`downtime-resumen.csv` sirve para reporte por grupo/proveedor; separa horas
+imputables y justificadas. `downtime-detalle.csv` conserva intervalos,
+clasificación, ticket, solicitante y nota.
+
+La utilidad `Validación TCP / Conectividad` conserva el timeout de socket de
+10 segundos y agrega un límite cliente de 12 segundos, contador visible y
+cancelación con `AbortController`. Tanto el éxito como timeout, rechazo, falta
+de ruta o error liberan siempre formulario y botón.
 
 La cabecera operativa además calcula:
 
@@ -234,15 +296,28 @@ No modifica `ocp_namespace`, `ocp_deployment`, casos, elementos, relaciones,
 anotaciones ni flujos. Los borrados funcionales son archivados lógicos; el
 historial se conserva.
 
+Flyway V7 de `0.8.0` es aditiva y crea:
+
+```text
+external_availability_schedule
+external_schedule_exception
+external_incident_classification
+```
+
+También agrega índices de rango y clasificación. No modifica filas históricas
+ni elimina objetos de V1–V6.
+
 ## API
 
 Lectura pública:
 
 ```http
 GET /api/v1/external-services/snapshot
-GET /api/v1/external-services/history?hours={1|6|24|168|720}[&serviceId={id}]
-GET /api/v1/external-services/history?from={ISO-8601}&to={ISO-8601}[&serviceId={id}]
+GET /api/v1/external-services/history?hours={1|6|24|168|720}[&serviceId={id}|&groupId={id}]
+GET /api/v1/external-services/history?from={ISO-8601}&to={ISO-8601}[&serviceId={id}|&groupId={id}]
 GET /api/v1/external-services/history/export.zip?...mismo rango y filtro...
+GET /api/v1/external-services/downtime?...mismo rango y filtro...[&groupId={id}]
+GET /api/v1/external-services/incidents?...mismo rango y filtro...[&groupId={id}]
 ```
 
 Gestión protegida por `X-External-Admin-Token`:
@@ -256,7 +331,13 @@ POST /api/v1/external-services/admin/services
 PUT /api/v1/external-services/admin/services/{id}
 POST /api/v1/external-services/admin/services/{id}/clone
 POST /api/v1/external-services/admin/services/{id}/archive
+GET /api/v1/external-services/admin/services/archived
+POST /api/v1/external-services/admin/services/{id}/restore
 POST /api/v1/external-services/admin/services/{id}/run
+GET|POST /api/v1/external-services/admin/schedules
+PUT|POST /api/v1/external-services/admin/schedules/{id}[/archive]
+POST /api/v1/external-services/admin/incidents/{id}/classifications
+POST /api/v1/external-services/admin/incidents/classifications/{id}/archive
 GET /api/v1/external-services/admin/export.kdbx
 POST /api/v1/external-services/admin/import-history
 ```
@@ -357,6 +438,24 @@ es compatible con `0.7.0`; no se eliminan tablas ni datos históricos. El texto
 técnico limpiado no se restaura porque no constituye información funcional.
 
 ## Rollback
+
+### Entregable 0.8.0
+
+Antes de desplegar se debe respaldar PostgreSQL y conservar imagen, manifiesto
+y ConfigMap de `0.7.3`. El rollback normal consiste en restaurar esos tres
+artefactos. `0.7.3` ignora las tablas creadas por V7, por lo que no hace falta
+eliminar datos y es posible retomar `0.8.0` sin perder horarios ni
+clasificaciones.
+
+Una reversión física de V7 solo se admite después de un `pg_dump` validado y
+con la aplicación `0.7.3` detenida. El orden es: eliminar
+`external_incident_classification`, `external_schedule_exception` y
+`external_availability_schedule`; después retirar únicamente la fila de V7 de
+`flyway_schema_history`. Es destructiva para horarios y justificaciones, por lo
+que no forma parte del rollback operativo recomendado. El SQL explícito queda
+en `scripts/rollback-external-downtime-v7.sql` y no se ejecuta automáticamente.
+
+### Entrega inicial del módulo
 
 La reversión preferida es de aplicación: restaurar imagen y ConfigMap `0.6.0`.
 Esa versión ignora las tablas `external_*`, por lo que no hace falta eliminar

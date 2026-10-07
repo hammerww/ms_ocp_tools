@@ -907,6 +907,51 @@ Validación completada el 26 de septiembre de 2026:
 El rollback consiste en aplicar el ConfigMap respaldado y restaurar la imagen
 inmutable `0.7.2`. No ejecutar rollback de Flyway ni eliminar historial.
 
+## 13.5. Entrega `0.8.0` — downtime e incidentes
+
+Además de las validaciones generales, antes de construir:
+
+1. confirmar que Git identifica el entregable como `0.8.0`;
+2. ejecutar el target de pruebas y validar la sintaxis de `external.js` y
+   `app.js`;
+3. generar y verificar un `pg_dump` del PostgreSQL de inventario;
+4. respaldar imagen inmutable, Deployment y ConfigMap de `0.7.3`;
+5. revisar que Flyway tenga V1–V6 exitosas y ninguna migración fallida;
+6. comprobar que el artefacto incluye
+   `V7__external_downtime_management.sql`.
+
+V7 crea únicamente horarios, excepciones y clasificaciones de incidentes. El
+orden de despliegue no cambia: probar/compilar localmente, transportar la imagen
+Linux `amd64` al servidor con Podman, publicar la imagen, aplicar configuración,
+actualizar Deployment y verificar rollout. Después del arranque se debe
+confirmar Flyway V7, probar los filtros por servicio/grupo y validar que una
+ejecución manual no altere el downtime oficial.
+
+Rollback normal de `0.8.0`:
+
+1. restaurar ConfigMap y Deployment respaldados de `0.7.3`;
+2. apuntar a la imagen inmutable verificada de `0.7.3`;
+3. esperar `1/1 Ready` y validar health, snapshot, monitor y vistas previas;
+4. conservar las tablas V7: `0.7.3` las ignora y no requieren reversión.
+
+Solo con exigencia expresa, aplicación detenida y dump validado se realiza la
+reversión física documentada en el contrato de Servicios externos. Esa acción
+elimina horarios y justificaciones, por lo que nunca acompaña automáticamente
+al rollback de la aplicación.
+
+Validación completada el 6 de octubre de 2026:
+
+- target Docker: 49 pruebas, 0 fallos y 0 errores;
+- runtime `linux/amd64` y TAR con SHA-256 verificado;
+- respaldo previo de Deployment, ConfigMap y PostgreSQL generado;
+- push directo con digest local/remoto
+  `sha256:7930e311d25c8ca2c98867850cc0d708a9f11fb0c93a7b3ed3fbf2fb3d82b6c9`;
+- Deployment `1/1`, pod sin reinicios y health `UP`;
+- Flyway V7 exitosa y tablas de horarios, excepciones y clasificaciones
+  presentes;
+- UI, snapshot, filtro individual, Downtime, Incidentes y ZIP validados por la
+  Route.
+
 ## 14. Criterio de finalización
 
 Una versión queda desplegada cuando se cumple todo lo siguiente:

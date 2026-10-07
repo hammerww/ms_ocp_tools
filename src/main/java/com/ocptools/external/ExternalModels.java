@@ -1,6 +1,8 @@
 package com.ocptools.external;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -168,6 +170,136 @@ public final class ExternalModels {
             String status,
             Long durationMs,
             String triggerSource
+    ) {
+    }
+
+    public record ArchivedServiceView(
+            long id,
+            Long groupId,
+            String name,
+            String environment,
+            String systemName,
+            Instant archivedAt
+    ) {
+    }
+
+    public record AvailabilityScheduleInput(
+            Long groupId,
+            Long serviceId,
+            String name,
+            String timezone,
+            List<Integer> workingDays,
+            LocalTime startTime,
+            LocalTime endTime,
+            List<ScheduleExceptionInput> exceptions
+    ) {
+    }
+
+    public record ScheduleExceptionInput(
+            LocalDate date,
+            boolean available,
+            LocalTime startTime,
+            LocalTime endTime,
+            String description
+    ) {
+    }
+
+    public record AvailabilityScheduleView(
+            long id,
+            Long groupId,
+            Long serviceId,
+            String scopeName,
+            String name,
+            String timezone,
+            List<Integer> workingDays,
+            LocalTime startTime,
+            LocalTime endTime,
+            List<ScheduleExceptionInput> exceptions
+    ) {
+    }
+
+    public record IncidentClassificationInput(
+            String classificationType,
+            Instant from,
+            Instant to,
+            String ticketReference,
+            String requestedBy,
+            String notes,
+            String confirmedBy
+    ) {
+    }
+
+    public record IncidentClassificationView(
+            long id,
+            String classificationType,
+            Instant from,
+            Instant to,
+            String ticketReference,
+            String requestedBy,
+            String notes,
+            String confirmedBy,
+            Instant createdAt
+    ) {
+    }
+
+    public record IncidentView(
+            long id,
+            long serviceId,
+            String serviceName,
+            String environment,
+            String systemName,
+            Instant openedAt,
+            Instant confirmedAt,
+            Instant recoveredAt,
+            String status,
+            List<IncidentClassificationView> classifications
+    ) {
+    }
+
+    public record DowntimeView(
+            Instant generatedAt,
+            Instant from,
+            Instant to,
+            Long serviceId,
+            Long groupId,
+            DowntimeSummary summary,
+            List<ServiceDowntimeView> services
+    ) {
+    }
+
+    public record DowntimeSummary(
+            long incidents,
+            long totalDownSeconds,
+            long justifiedSeconds
+    ) {
+    }
+
+    public record ServiceDowntimeView(
+            long serviceId,
+            Long groupId,
+            String groupName,
+            String serviceName,
+            String environment,
+            String systemName,
+            String timezone,
+            String scheduleLabel,
+            long totalDownSeconds,
+            long justifiedSeconds,
+            List<DowntimeSegmentView> segments
+    ) {
+    }
+
+    public record DowntimeSegmentView(
+            long incidentId,
+            Instant from,
+            Instant to,
+            long durationSeconds,
+            String category,
+            String incidentStatus,
+            Long classificationId,
+            String ticketReference,
+            String requestedBy,
+            String notes
     ) {
     }
 

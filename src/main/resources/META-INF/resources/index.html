@@ -63,6 +63,8 @@
                 <div id="external-admin-actions" class="external-admin-actions hidden">
                     <button id="external-add" class="button primary compact-button" type="button">Nuevo servicio</button>
                     <button id="external-credentials" class="button secondary compact-button" type="button">Credenciales</button>
+                    <button id="external-archived" class="button secondary compact-button" type="button">Archivados</button>
+                    <button id="external-schedules" class="button secondary compact-button" type="button">Horarios</button>
                     <button id="external-export" class="button secondary compact-button" type="button">Exportar KDBX</button>
                 </div>
             </div>
@@ -137,6 +139,52 @@
     </form>
 </dialog>
 
+<dialog id="external-archived-dialog" class="external-editor-dialog compact-dialog">
+    <div class="dialog-heading sticky-heading"><div><p class="eyebrow">Gestión protegida</p><h2>Servicios archivados</h2></div><button class="icon-button" type="button" data-close-dialog="external-archived-dialog" aria-label="Cerrar">×</button></div>
+    <p class="dialog-target">No se monitorean ni forman parte de los KPI. El historial se conserva.</p>
+    <div id="external-archived-list" class="credential-list"></div>
+</dialog>
+
+<dialog id="external-schedule-dialog" class="external-editor-dialog compact-dialog">
+    <div class="dialog-heading sticky-heading"><div><p class="eyebrow">Disponibilidad laboral</p><h2>Horarios y excepciones</h2></div><button class="icon-button" type="button" data-close-dialog="external-schedule-dialog" aria-label="Cerrar">×</button></div>
+    <div id="external-schedule-list" class="credential-list"></div>
+    <form id="external-schedule-form" class="external-form-section">
+        <input id="external-schedule-id" type="hidden">
+        <h3 id="external-schedule-form-title">Nuevo horario</h3>
+        <div class="external-form-grid">
+            <label><span>Aplicar a</span><select id="schedule-scope"><option value="group">Grupo</option><option value="service">Servicio</option></select></label>
+            <label><span>Grupo o servicio</span><select id="schedule-target" required></select></label>
+            <label><span>Nombre</span><input id="schedule-name" value="Horario laboral" required></label>
+            <label><span>Zona horaria</span><input id="schedule-timezone" value="America/Lima" required></label>
+            <label><span>Desde</span><input id="schedule-start" type="time" value="08:00" required></label>
+            <label><span>Hasta</span><input id="schedule-end" type="time" value="19:00" required></label>
+            <fieldset class="full weekday-fieldset"><legend>Días laborables</legend>
+                <label><input type="checkbox" data-schedule-day value="1" checked> Lun</label><label><input type="checkbox" data-schedule-day value="2" checked> Mar</label><label><input type="checkbox" data-schedule-day value="3" checked> Mié</label><label><input type="checkbox" data-schedule-day value="4" checked> Jue</label><label><input type="checkbox" data-schedule-day value="5" checked> Vie</label><label><input type="checkbox" data-schedule-day value="6"> Sáb</label><label><input type="checkbox" data-schedule-day value="7"> Dom</label>
+            </fieldset>
+        </div>
+        <div class="section-heading"><div><h3>Excepciones</h3><p>Feriados o ventanas laborables especiales.</p></div><button id="external-add-exception" class="button secondary compact-button" type="button">Agregar</button></div>
+        <div id="external-schedule-exceptions" class="schedule-exceptions"></div>
+        <div id="external-schedule-error" class="dialog-error" role="alert"></div>
+        <div class="dialog-actions"><button id="external-schedule-clear" class="button secondary" type="button">Limpiar</button><button class="button primary" type="submit">Guardar horario</button></div>
+    </form>
+</dialog>
+
+<dialog id="external-classification-dialog" class="testing-dialog classification-dialog">
+    <form id="external-classification-form">
+        <input id="classification-incident-id" type="hidden">
+        <h2>Clasificar indisponibilidad</h2>
+        <p class="dialog-target">La evidencia de sensado no se modifica. Solo se justifica el intervalo confirmado.</p>
+        <label><span>Clasificación</span><select id="classification-type"><option value="REQUESTED_RESTART">Reinicio solicitado</option><option value="PLANNED_WORK">Trabajo programado aprobado</option><option value="UNPLANNED">Interrupción no planificada</option></select></label>
+        <div class="external-form-grid"><label><span>Desde</span><input id="classification-from" type="datetime-local" required></label><label><span>Hasta</span><input id="classification-to" type="datetime-local" required></label></div>
+        <label><span>Ticket / solicitud</span><input id="classification-ticket" maxlength="160"></label>
+        <label><span>Solicitado por</span><input id="classification-requester" maxlength="160"></label>
+        <label><span>Confirmado por</span><input id="classification-confirmed-by" maxlength="160" required></label>
+        <label><span>Nota</span><textarea id="classification-notes" maxlength="1000" rows="3"></textarea></label>
+        <div id="external-classification-error" class="dialog-error" role="alert"></div>
+        <div class="dialog-actions"><button type="button" class="button secondary" data-close-dialog="external-classification-dialog">Cancelar</button><button class="button primary" type="submit">Confirmar clasificación</button></div>
+    </form>
+</dialog>
+
 <dialog id="case-note-dialog" class="testing-dialog case-note-dialog">
     <div class="case-note-content">
         <div class="dialog-heading"><div><p class="eyebrow">Anotación del caso</p><h2 id="case-note-title"></h2></div><button id="case-note-close" class="icon-button" type="button" aria-label="Cerrar">×</button></div>
@@ -198,7 +246,7 @@
 </dialog>
 
 <footer><span>OCP Tools</span><span>Proyecto OpenShift: testing-pmx3</span></footer>
-<script src="/app.js?v=0.7.3-20260926" defer></script>
-<script src="/external.js?v=0.7.3-20260926" defer></script>
+<script src="/app.js?v=0.8.0-20261006" defer></script>
+<script src="/external.js?v=0.8.0-20261006" defer></script>
 </body>
 </html>

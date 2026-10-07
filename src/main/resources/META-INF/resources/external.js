@@ -1,7 +1,8 @@
 const externalState = { snapshot: null, token: null, expiresAt: 0, credentials: [], editing: null,
     history: null, historyMode: 'preset', historyHours: 24, historyFrom: null, historyTo: null,
-    historyServiceId: null, historyLoading: false, historyError: null,
-    historyRequest: 0, historyOpen: false };
+    historyServiceId: null, historyGroupId: null, historyView: 'sensing', downtime: null, incidents: null,
+    historyLoading: false, historyError: null, historyRequest: 0, historyOpen: false,
+    archived: [], schedules: [] };
 const extPanel = document.querySelector('#external-panel');
 const externalMessage = document.querySelector('#external-message');
 const externalSearch = document.querySelector('#external-search');
@@ -10,6 +11,9 @@ const externalStatus = document.querySelector('#external-status');
 const unlockDialog = document.querySelector('#external-unlock-dialog');
 const editorDialog = document.querySelector('#external-editor-dialog');
 const credentialDialog = document.querySelector('#external-credential-dialog');
+const archivedDialog = document.querySelector('#external-archived-dialog');
+const scheduleDialog = document.querySelector('#external-schedule-dialog');
+const classificationDialog = document.querySelector('#external-classification-dialog');
 
 window.onExternalTabChanged = (active) => { if (active && !externalState.snapshot) loadExternalServices(); };
 [externalSearch, externalEnvironment, externalStatus].forEach((control) =>
@@ -19,6 +23,8 @@ document.querySelector('#external-unlock-cancel').addEventListener('click', () =
 document.querySelector('#external-unlock-form').addEventListener('submit', unlockExternalAdmin);
 document.querySelector('#external-add').addEventListener('click', () => openServiceEditor());
 document.querySelector('#external-credentials').addEventListener('click', openCredentialManager);
+document.querySelector('#external-archived').addEventListener('click', openArchivedServices);
+document.querySelector('#external-schedules').addEventListener('click', openScheduleManager);
 document.querySelector('#external-export').addEventListener('click', exportKdbx);
 document.querySelector('#external-editor-close').addEventListener('click', () => editorDialog.close());
 document.querySelector('#external-editor-cancel').addEventListener('click', () => editorDialog.close());
@@ -28,6 +34,15 @@ document.querySelector('#external-create-group').addEventListener('click', creat
 document.querySelector('#external-credential-close').addEventListener('click', () => credentialDialog.close());
 document.querySelector('#external-credential-clear').addEventListener('click', resetCredentialForm);
 document.querySelector('#external-credential-form').addEventListener('submit', saveCredential);
+document.querySelector('#external-schedule-form').addEventListener('submit', saveSchedule);
+document.querySelector('#external-schedule-clear').addEventListener('click', resetScheduleForm);
+document.querySelector('#schedule-scope').addEventListener('change', fillScheduleTargets);
+document.querySelector('#external-add-exception').addEventListener('click', () => addScheduleException());
+document.querySelector('#external-schedule-exceptions').addEventListener('click', (event) => event.target.closest('[data-remove-exception]')?.closest('.schedule-exception-row')?.remove());
+document.querySelector('#external-classification-form').addEventListener('submit', saveIncidentClassification);
+document.querySelectorAll('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => document.querySelector(`#${button.dataset.closeDialog}`)?.close()));
+document.querySelector('#external-archived-list').addEventListener('click', restoreArchivedService);
+document.querySelector('#external-schedule-list').addEventListener('click', handleScheduleAction);
 extPanel.addEventListener('click', handleExternalAction);
 extPanel.addEventListener('change', handleExternalChange);
 document.querySelector('#external-probe-editor').addEventListener('click', (event) => {
@@ -146,12 +161,14 @@ async function loadExternalHistory() {
     externalState.historyError = null;
     renderExternalServices();
     try {
-        const response = await fetch(`/api/v1/external-services/history?${externalHistoryQuery()}`,
-            { headers: { Accept: 'application/json' } });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(body.message || `HTTP ${response.status}`);
+        const requests = [externalPublicRequest(`/history?${externalHistoryQuery()}`)];
+        if (externalState.historyView === 'downtime') requests.push(externalPublicRequest(`/downtime?${externalHistoryQuery()}`));
+        if (externalState.historyView === 'incidents') requests.push(externalPublicRequest(`/incidents?${externalHistoryQuery()}`));
+        const bodies = await Promise.all(requests);
         if (request !== externalState.historyRequest) return;
-        externalState.history = body;
+        externalState.history = bodies[0];
+        if (externalState.historyView === 'downtime') externalState.downtime = bodies[1];
+        if (externalState.historyView === 'incidents') externalState.incidents = bodies[1];
     } catch (exception) {
         if (request !== externalState.historyRequest) return;
         externalState.historyError = exception.message;
@@ -167,10 +184,14 @@ function externalHistorySection() {
         .map(([hours, label]) => `<button type="button" class="${externalState.historyMode === 'preset' && externalState.historyHours === hours ? 'active' : ''}" data-external-action="history-range" data-hours="${hours}">${label}</button>`).join('');
     const services = externalState.snapshot.services.map((service) =>
         `<option value="${service.id}"${externalState.historyServiceId === service.id ? ' selected' : ''}>${externalEscape(service.name)} · ${externalEscape(service.environment)}</option>`).join('');
+    const groups = externalState.snapshot.groups.map((group) =>
+        `<option value="${group.id}"${externalState.historyGroupId === group.id ? ' selected' : ''}>${externalEscape(group.name)}</option>`).join('');
     let body = '';
     if (externalState.historyLoading) body = '<div class="external-history-state">Calculando KPI históricos…</div>';
     else if (externalState.historyError) body = `<div class="external-history-state error">${externalEscape(externalState.historyError)}</div>`;
     else if (!externalState.history) body = '<div class="external-history-state">Cargando historial…</div>';
+    else if (externalState.historyView === 'downtime') body = externalDowntimeBody(externalState.downtime);
+    else if (externalState.historyView === 'incidents') body = externalIncidentsBody(externalState.incidents);
     else body = externalHistoryBody(externalState.history);
     const custom = externalState.historyMode === 'custom' ? `<div class="external-custom-range">
         <label><span>Desde</span><input type="datetime-local" data-external-history-from value="${externalEscape(externalState.historyFrom || '')}"></label>
@@ -180,7 +201,7 @@ function externalHistorySection() {
     const actions = `<div class="external-history-actions">${externalState.historyOpen ? `<button type="button" class="button secondary compact-button" data-external-action="history-export"${!externalState.historyLoading && externalState.history ? '' : ' disabled'}>Exportar KPI ZIP</button>` : ''}<button type="button" class="button secondary compact-button" data-external-action="history-toggle">${externalState.historyOpen ? 'Ocultar detalle' : 'Ver historial'}</button></div>`;
     return `<section class="external-history${externalState.historyOpen ? ' open' : ''}">
         <div class="external-history-heading"><div><h3>Historial y KPI</h3><p>Disponibilidad, latencia y estados de las ejecuciones programadas.</p></div>${actions}</div>
-        ${externalState.historyOpen ? `<div class="external-history-controls"><div class="external-history-ranges">${ranges}<button type="button" class="${externalState.historyMode === 'custom' ? 'active' : ''}" data-external-action="history-custom">Personalizado</button></div><select data-external-history-service aria-label="Filtrar historial por servicio"><option value="">Todos los servicios</option>${services}</select></div>${custom}${body}` : ''}
+        ${externalState.historyOpen ? `<div class="external-history-views" role="tablist"><button type="button" class="${externalState.historyView === 'sensing' ? 'active' : ''}" data-external-action="history-view" data-view="sensing">Sensado</button><button type="button" class="${externalState.historyView === 'downtime' ? 'active' : ''}" data-external-action="history-view" data-view="downtime">Downtime</button><button type="button" class="${externalState.historyView === 'incidents' ? 'active' : ''}" data-external-action="history-view" data-view="incidents">Incidentes</button></div><div class="external-history-controls"><div class="external-history-ranges">${ranges}<button type="button" class="${externalState.historyMode === 'custom' ? 'active' : ''}" data-external-action="history-custom">Personalizado</button></div><select data-external-history-group aria-label="Filtrar historial por grupo"><option value="">Todos los grupos</option>${groups}</select><select data-external-history-service aria-label="Filtrar historial por servicio"><option value="">Todos los servicios</option>${services}</select></div>${custom}${body}` : ''}
     </section>`;
 }
 
@@ -193,7 +214,12 @@ function externalHistoryBody(history) {
     });
     const timeline = history.services.length ? history.services.map((service) => {
         const points = grouped.get(service.serviceId) || [];
-        const segments = points.map((point) => `<span class="${statusTone(point.status)}" title="${externalEscape(service.serviceName)} · ${externalDateTime(point.bucket)} · ${statusLabel(point.status)} · ${point.averageDurationMs ?? 0} ms"></span>`).join('');
+        const segments = points.map((point) => {
+            const usedSlots = Math.min(40, Math.ceil((Date.parse(history.to) - Date.parse(history.from)) / (history.bucketSeconds * 1000)) + 1);
+            const firstSlot = 41 - usedSlots;
+            const slot = Math.max(1, Math.min(40, firstSlot + Math.floor((Date.parse(point.bucket) - Date.parse(history.from)) / (history.bucketSeconds * 1000))));
+            return `<span class="${statusTone(point.status)}" style="grid-column:${slot}" title="${externalEscape(service.serviceName)} · ${externalDateTime(point.bucket)} · ${statusLabel(point.status)} · ${point.averageDurationMs ?? 0} ms"></span>`;
+        }).join('');
         return `<div class="external-timeline-row"><strong title="${externalEscape(service.serviceName)}">${externalEscape(service.serviceName)}</strong><div class="external-timeline-track">${segments || '<em>Sin mediciones</em>'}</div></div>`;
     }).join('') : externalEmpty('No existen ejecuciones programadas en el rango');
     const rows = history.services.map((service) => `<tr>
@@ -213,6 +239,39 @@ function externalHistoryBody(history) {
     </div>
     <div class="external-timeline" aria-label="Línea de tiempo por servicio">${timeline}</div>
     <div class="external-history-table-wrap"><table class="external-history-table"><thead><tr><th>Servicio</th><th>Ejec.</th><th>Disponibilidad</th><th>Media</th><th>p95</th><th>Advert.</th><th>Caídas</th><th>Último estado</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function externalDowntimeBody(view) {
+    if (!view) return '<div class="external-history-state">Cargando downtime…</div>';
+    const from = Date.parse(view.from); const to = Date.parse(view.to); const span = Math.max(1, to - from);
+    const rows = (view.services || []).map((service) => {
+        const segments = service.segments.map((segment) => {
+            const left = Math.max(0, (Date.parse(segment.from) - from) * 100 / span);
+            const width = Math.max(.35, (Date.parse(segment.to) - Date.parse(segment.from)) * 100 / span);
+            const label = segment.durationSeconds > 3600 ? compactHours(segment.durationSeconds) : '';
+            const tone = segment.category === 'JUSTIFIED' ? 'justified' : 'unplanned';
+            const attributes = segment.category === 'JUSTIFIED' ? '' : ` data-external-action="classify-incident" data-incident-id="${segment.incidentId}" data-from="${externalEscape(segment.from)}" data-to="${externalEscape(segment.to)}"`;
+            return `<button type="button" class="downtime-segment ${tone}" style="left:${left}%;width:${Math.min(width, 100 - left)}%"${attributes} title="${externalEscape(service.serviceName)} · ${externalDateTime(segment.from)} a ${externalDateTime(segment.to)} · ${compactDuration(segment.durationSeconds)}${segment.ticketReference ? ` · ${externalEscape(segment.ticketReference)}` : ''}">${label}</button>`;
+        }).join('');
+        return `<div class="downtime-row"><div><strong title="${externalEscape(service.serviceName)}">${externalEscape(service.serviceName)}</strong><small>${externalEscape(service.scheduleLabel)}</small></div><div class="downtime-track">${segments}</div><strong class="downtime-total down">${compactDuration(service.totalDownSeconds)}</strong><strong class="downtime-total justified">${compactDuration(service.justifiedSeconds)}</strong></div>`;
+    }).join('');
+    return `<div class="external-history-kpis downtime-kpis">
+        ${kpi('Incidentes', view.summary.incidents, 'confirmados en horario laboral')}
+        ${kpi('Total down', compactDuration(view.summary.totalDownSeconds), 'indisponibilidad imputable', 'down')}
+        ${kpi('Justificado', compactDuration(view.summary.justifiedSeconds), 'reinicios o trabajos aprobados', 'justified')}
+    </div><div class="downtime-legend"><span><i class="unplanned"></i> Indisponibilidad imputable</span><span><i class="justified"></i> Reinicio solicitado / trabajo aprobado</span><small>Precisión determinada por el intervalo de sensado programado.</small></div>
+    <div class="downtime-chart"><div class="downtime-row downtime-header"><strong>Servicio</strong><span>Intervalos dentro del horario laboral</span><strong>Total down</strong><strong>Justificado</strong></div>${rows || externalEmpty('No hay servicios para el filtro')}</div>`;
+}
+
+function externalIncidentsBody(incidents) {
+    if (!incidents) return '<div class="external-history-state">Cargando incidentes…</div>';
+    if (!incidents.length) return externalEmpty('No existen incidentes en el rango seleccionado');
+    const rows = incidents.map((incident) => {
+        const status = incident.status === 'OPEN' ? 'Abierto' : incident.status === 'PENDING' ? 'Por confirmar' : 'Recuperado';
+        const classified = (incident.classifications || []).map((item) => `<small>${classificationLabel(item.classificationType)} · ${externalDateTime(item.from)}–${externalDateTime(item.to)}${item.ticketReference ? ` · ${externalEscape(item.ticketReference)}` : ''}${externalUnlocked() ? ` <button type="button" class="inline-link" data-external-action="archive-classification" data-classification-id="${item.id}">retirar</button>` : ''}</small>`).join('');
+        return `<tr><td><strong>${externalEscape(incident.serviceName)}</strong><small>${externalEscape(incident.environment)} · ${externalEscape(incident.systemName)}</small></td><td>${externalDateTime(incident.openedAt)}</td><td>${externalDateTime(incident.recoveredAt)}</td><td><span class="external-status ${incident.status === 'OPEN' ? 'down' : incident.status === 'PENDING' ? 'warning' : 'up'}">${status}</span>${classified}</td><td><button type="button" data-external-action="classify-incident" data-incident-id="${incident.id}" data-from="${externalEscape(incident.openedAt)}" data-to="${externalEscape(incident.recoveredAt || new Date().toISOString())}">Clasificar</button></td></tr>`;
+    }).join('');
+    return `<div class="external-history-table-wrap"><table class="external-history-table"><thead><tr><th>Servicio</th><th>Inicio</th><th>Recuperación</th><th>Estado / clasificación</th><th>Acción</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 async function exportExternalHistory() {
@@ -276,6 +335,10 @@ async function handleExternalAction(event) {
         if (externalState.historyOpen && !externalState.history) loadExternalHistory();
         return;
     }
+    if (action.dataset.externalAction === 'history-view') {
+        externalState.historyView = action.dataset.view;
+        return loadExternalHistory();
+    }
     if (action.dataset.externalAction === 'history-range') {
         externalState.historyMode = 'preset';
         externalState.historyHours = Number(action.dataset.hours);
@@ -298,6 +361,17 @@ async function handleExternalAction(event) {
         return loadExternalHistory();
     }
     if (action.dataset.externalAction === 'history-export') return exportExternalHistory();
+    if (action.dataset.externalAction === 'classify-incident') {
+        if (!externalUnlocked()) return unlockDialog.showModal();
+        return openIncidentClassification(action.dataset.incidentId, action.dataset.from, action.dataset.to);
+    }
+    if (action.dataset.externalAction === 'archive-classification') {
+        if (!externalUnlocked()) return unlockDialog.showModal();
+        if (!confirm('¿Retirar esta justificación? La evidencia de sensado se conservará.')) return;
+        try { await externalRequest(`/admin/incidents/classifications/${action.dataset.classificationId}/archive`, { method: 'POST' }); await loadExternalHistory(); }
+        catch (exception) { alert(exception.message); }
+        return;
+    }
     const service = externalState.snapshot.services.find((item) => item.id === Number(action.dataset.id));
     if (!service || !externalUnlocked()) return unlockDialog.showModal();
     if (action.dataset.externalAction === 'edit') return openServiceEditor(service);
@@ -307,9 +381,16 @@ async function handleExternalAction(event) {
 }
 
 function handleExternalChange(event) {
-    if (!event.target.matches('[data-external-history-service]')) return;
-    externalState.historyServiceId = numberOrNull(event.target.value);
-    loadExternalHistory();
+    if (event.target.matches('[data-external-history-service]')) {
+        externalState.historyServiceId = numberOrNull(event.target.value);
+        if (externalState.historyServiceId != null) externalState.historyGroupId = null;
+        loadExternalHistory();
+    }
+    if (event.target.matches('[data-external-history-group]')) {
+        externalState.historyGroupId = numberOrNull(event.target.value);
+        if (externalState.historyGroupId != null) externalState.historyServiceId = null;
+        loadExternalHistory();
+    }
 }
 
 function openServiceEditor(service = null) {
@@ -488,6 +569,129 @@ async function archiveCredential(item) {
     catch (exception) { alert(exception.message); }
 }
 
+async function openArchivedServices() {
+    try {
+        externalState.archived = await externalRequest('/admin/services/archived');
+        renderArchivedServices(); archivedDialog.showModal();
+    } catch (exception) { alert(exception.message); }
+}
+
+function renderArchivedServices() {
+    document.querySelector('#external-archived-list').innerHTML = externalState.archived.length ? externalState.archived.map((service) => `<article><div><strong>${externalEscape(service.name)}</strong><small>${externalEscape(service.environment)} · ${externalEscape(service.systemName)} · archivado ${externalDateTime(service.archivedAt)}</small></div><button type="button" data-restore-service="${service.id}">Desarchivar</button></article>`).join('') : externalEmpty('No hay servicios archivados');
+}
+
+async function restoreArchivedService(event) {
+    const button = event.target.closest('[data-restore-service]'); if (!button) return;
+    try {
+        await externalRequest(`/admin/services/${button.dataset.restoreService}/restore`, { method: 'POST' });
+        externalState.archived = await externalRequest('/admin/services/archived');
+        renderArchivedServices(); await loadExternalServices();
+    } catch (exception) { alert(exception.message); }
+}
+
+async function openScheduleManager() {
+    try {
+        externalState.schedules = await externalRequest('/admin/schedules');
+        renderScheduleList(); resetScheduleForm(); scheduleDialog.showModal();
+    } catch (exception) { alert(exception.message); }
+}
+
+function renderScheduleList() {
+    document.querySelector('#external-schedule-list').innerHTML = externalState.schedules.length ? externalState.schedules.map((schedule) => `<article><div><strong>${externalEscape(schedule.name)}</strong><small>${externalEscape(schedule.scopeName)} · ${externalEscape(schedule.timezone)} · ${String(schedule.startTime).slice(0, 5)}–${String(schedule.endTime).slice(0, 5)} · días ${schedule.workingDays.join(', ')}</small></div><div><button type="button" data-schedule-action="edit" data-id="${schedule.id}">Editar</button><button type="button" class="danger-link" data-schedule-action="archive" data-id="${schedule.id}">Archivar</button></div></article>`).join('') : externalEmpty('Sin horarios específicos. Se aplica L–V 08:00–19:00 America/Lima.');
+}
+
+function handleScheduleAction(event) {
+    const button = event.target.closest('[data-schedule-action]'); if (!button) return;
+    const schedule = externalState.schedules.find((item) => item.id === Number(button.dataset.id)); if (!schedule) return;
+    if (button.dataset.scheduleAction === 'edit') fillScheduleForm(schedule);
+    if (button.dataset.scheduleAction === 'archive') archiveSchedule(schedule);
+}
+
+function resetScheduleForm() {
+    document.querySelector('#external-schedule-form').reset();
+    document.querySelector('#external-schedule-id').value = '';
+    document.querySelector('#external-schedule-form-title').textContent = 'Nuevo horario';
+    document.querySelector('#schedule-timezone').value = 'America/Lima';
+    document.querySelector('#schedule-start').value = '08:00'; document.querySelector('#schedule-end').value = '19:00';
+    document.querySelectorAll('[data-schedule-day]').forEach((item) => item.checked = Number(item.value) <= 5);
+    document.querySelector('#external-schedule-exceptions').innerHTML = '';
+    document.querySelector('#external-schedule-error').textContent = '';
+    fillScheduleTargets();
+}
+
+function fillScheduleTargets() {
+    const scope = document.querySelector('#schedule-scope').value;
+    const target = document.querySelector('#schedule-target');
+    const items = scope === 'group' ? externalState.snapshot.groups : externalState.snapshot.services;
+    target.innerHTML = items.map((item) => `<option value="${item.id}">${externalEscape(item.name)}${scope === 'service' ? ` · ${externalEscape(item.environment)}` : ''}</option>`).join('');
+}
+
+function fillScheduleForm(schedule) {
+    document.querySelector('#external-schedule-id').value = schedule.id;
+    document.querySelector('#external-schedule-form-title').textContent = `Editar · ${schedule.name}`;
+    document.querySelector('#schedule-scope').value = schedule.serviceId ? 'service' : 'group'; fillScheduleTargets();
+    document.querySelector('#schedule-target').value = schedule.serviceId || schedule.groupId;
+    document.querySelector('#schedule-name').value = schedule.name; document.querySelector('#schedule-timezone').value = schedule.timezone;
+    document.querySelector('#schedule-start').value = String(schedule.startTime).slice(0, 5); document.querySelector('#schedule-end').value = String(schedule.endTime).slice(0, 5);
+    document.querySelectorAll('[data-schedule-day]').forEach((item) => item.checked = schedule.workingDays.includes(Number(item.value)));
+    const container = document.querySelector('#external-schedule-exceptions'); container.innerHTML = '';
+    schedule.exceptions.forEach(addScheduleException);
+}
+
+function addScheduleException(exception = null) {
+    const row = document.createElement('div'); row.className = 'schedule-exception-row';
+    row.innerHTML = `<input type="date" data-exception-date value="${externalEscape(exception?.date || '')}" required><select data-exception-available><option value="false">No laborable</option><option value="true">Horario especial</option></select><input type="time" data-exception-start value="${externalEscape(String(exception?.startTime || '').slice(0, 5))}"><input type="time" data-exception-end value="${externalEscape(String(exception?.endTime || '').slice(0, 5))}"><input data-exception-description placeholder="Motivo" value="${externalEscape(exception?.description || '')}"><button type="button" data-remove-exception aria-label="Quitar">×</button>`;
+    row.querySelector('[data-exception-available]').value = String(exception?.available || false);
+    document.querySelector('#external-schedule-exceptions').append(row);
+}
+
+async function saveSchedule(event) {
+    event.preventDefault(); if (!event.target.reportValidity()) return;
+    const scope = value('#schedule-scope'); const id = value('#external-schedule-id');
+    const exceptions = [...document.querySelectorAll('.schedule-exception-row')].map((row) => {
+        const available = row.querySelector('[data-exception-available]').value === 'true';
+        return { date: row.querySelector('[data-exception-date]').value, available,
+            startTime: available ? row.querySelector('[data-exception-start]').value || null : null,
+            endTime: available ? row.querySelector('[data-exception-end]').value || null : null,
+            description: row.querySelector('[data-exception-description]').value.trim() || null };
+    });
+    const payload = { groupId: scope === 'group' ? Number(value('#schedule-target')) : null,
+        serviceId: scope === 'service' ? Number(value('#schedule-target')) : null,
+        name: value('#schedule-name'), timezone: value('#schedule-timezone'),
+        workingDays: [...document.querySelectorAll('[data-schedule-day]:checked')].map((item) => Number(item.value)),
+        startTime: value('#schedule-start'), endTime: value('#schedule-end'), exceptions };
+    try {
+        await externalRequest(id ? `/admin/schedules/${id}` : '/admin/schedules', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+        externalState.schedules = await externalRequest('/admin/schedules'); renderScheduleList(); resetScheduleForm();
+        if (externalState.historyView === 'downtime') loadExternalHistory();
+    } catch (exception) { document.querySelector('#external-schedule-error').textContent = exception.message; }
+}
+
+async function archiveSchedule(schedule) {
+    if (!confirm(`¿Archivar el horario ${schedule.name}?`)) return;
+    try { await externalRequest(`/admin/schedules/${schedule.id}/archive`, { method: 'POST' }); externalState.schedules = await externalRequest('/admin/schedules'); renderScheduleList(); resetScheduleForm(); }
+    catch (exception) { alert(exception.message); }
+}
+
+function openIncidentClassification(incidentId, from, to) {
+    document.querySelector('#classification-incident-id').value = incidentId;
+    document.querySelector('#classification-from').value = localDateTimeValue(new Date(from));
+    document.querySelector('#classification-to').value = localDateTimeValue(new Date(to));
+    document.querySelector('#external-classification-error').textContent = '';
+    classificationDialog.showModal();
+}
+
+async function saveIncidentClassification(event) {
+    event.preventDefault(); if (!event.target.reportValidity()) return;
+    const incidentId = value('#classification-incident-id');
+    const payload = { classificationType: value('#classification-type'),
+        from: new Date(value('#classification-from')).toISOString(), to: new Date(value('#classification-to')).toISOString(),
+        ticketReference: value('#classification-ticket') || null, requestedBy: value('#classification-requester') || null,
+        confirmedBy: value('#classification-confirmed-by'), notes: value('#classification-notes') || null };
+    try { await externalRequest(`/admin/incidents/${incidentId}/classifications`, { method: 'POST', body: JSON.stringify(payload) }); classificationDialog.close(); await loadExternalHistory(); }
+    catch (exception) { document.querySelector('#external-classification-error').textContent = exception.message; }
+}
+
 async function exportKdbx() {
     try {
         const response = await fetch('/api/v1/external-services/admin/export.kdbx',
@@ -507,6 +711,13 @@ async function externalRequest(path, options = {}) {
     return body;
 }
 
+async function externalPublicRequest(path) {
+    const response = await fetch(`/api/v1/external-services${path}`, { headers: { Accept: 'application/json' } });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.message || `HTTP ${response.status}`);
+    return body;
+}
+
 function fillGroupSelect(selected = null) {
     const select = document.querySelector('#external-service-group'); if (!select || !externalState.snapshot) return;
     select.innerHTML = '<option value="">Sin grupo</option>' + externalState.snapshot.groups.map((group) => `<option value="${group.id}">${externalEscape(group.name)}</option>`).join('');
@@ -516,6 +727,12 @@ function probeTarget(probe) { if (probe.url) return probe.url; if (probe.host) r
 function kpi(label, value, detail, tone = '') { return `<article class="external-kpi ${tone}"><span>${label}</span><strong>${value}</strong><small>${detail}</small></article>`; }
 function percent(value) { return value == null ? '—' : `${Number(value).toFixed(2)}%`; }
 function duration(value) { return value == null ? '—' : `${value} ms`; }
+function compactDuration(seconds) {
+    const total = Math.max(0, Number(seconds) || 0); const hours = Math.floor(total / 3600); const minutes = Math.floor((total % 3600) / 60);
+    if (hours) return `${hours} h${minutes ? ` ${minutes} min` : ''}`; return minutes ? `${minutes} min` : total ? '< 1 min' : '0 min';
+}
+function compactHours(seconds) { const value = Number(seconds) / 3600; return Number.isInteger(value) ? `${value} h` : `${value.toFixed(1)} h`; }
+function classificationLabel(value) { return ({ REQUESTED_RESTART: 'Reinicio solicitado', PLANNED_WORK: 'Trabajo programado', UNPLANNED: 'No planificado' })[value] || value; }
 function statusLabel(status) { return ({ UP: 'Operativo', WARNING: 'Advertencia', DOWN: 'Caído', ERROR: 'Error', UNKNOWN: 'Sin datos', SKIPPED: 'Omitido' })[status] || status || 'Sin datos'; }
 function statusTone(status) { return status === 'ERROR' ? 'down' : String(status || 'UNKNOWN').toLowerCase(); }
 function manualProbeResult(run, probe) { return run?.results?.find((result) => result.probeId === probe.id || result.probeName === probe.name) || null; }
@@ -554,6 +771,7 @@ function externalHistoryQuery() {
         query.set('to', new Date(externalState.historyTo).toISOString());
     } else query.set('hours', String(externalState.historyHours));
     if (externalState.historyServiceId != null) query.set('serviceId', String(externalState.historyServiceId));
+    if (externalState.historyGroupId != null) query.set('groupId', String(externalState.historyGroupId));
     return query.toString();
 }
 function externalDateTime(value) { return value ? new Date(value).toLocaleString('es-PE') : '—'; }

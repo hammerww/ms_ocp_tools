@@ -18,19 +18,19 @@ El procedimiento manual completo para construir, transportar, publicar,
 desplegar, validar y revertir una versión se encuentra en
 [`docs/context/infrastructure/MANUAL_DESPLIEGUE.md`](docs/context/infrastructure/MANUAL_DESPLIEGUE.md).
 
-La versión `0.7.3` está desplegada y operativa en `testing-pmx3`. Conserva las
-funciones de `0.7.2` y estabiliza las sondas HTTP con una conexión nueva por
-intento, cierre explícito, un único reintento ante timeout, diagnóstico por
-fase y código HTTP visible. El monitor trabaja con un servicio en paralelo y
-mantiene su intervalo de 10 minutos. Su contrato completo está en
+La versión `0.8.0` está desplegada y operativa en `testing-pmx3`. Mantiene el
+monitor cada 10 minutos con paralelismo 1 y agrega las hojas `Sensado`,
+`Downtime` e `Incidentes`, horarios laborables, clasificación de
+indisponibilidades, desarchivado, reportes ZIP y cancelación visible de la
+utilidad TCP. Su contrato completo está en
 [`docs/context/tools/tool-04-external-services/CONTEXT.md`](docs/context/tools/tool-04-external-services/CONTEXT.md).
-Flyway confirmó el esquema V6 sin ejecutar migraciones. La imagen Linux
-`amd64` superó 47 pruebas y se publicó con digest
-`sha256:e30565fd54fed7809f6b02e9ba5dfe20f4a087dc0c4f379c34a8157abb1e1bd7`.
-El primer ciclo programado procesó 30 servicios en 35,613 segundos; health,
-Route, UI y API pública respondieron HTTP 200 y el pod quedó sin reinicios.
-La imagen y el ConfigMap `0.7.2` son el rollback inmediato; no hay rollback de
-base de datos porque `0.7.3` no agrega migraciones.
+La imagen Linux `amd64` superó 49 pruebas y se publicó con digest
+`sha256:7930e311d25c8ca2c98867850cc0d708a9f11fb0c93a7b3ed3fbf2fb3d82b6c9`.
+Flyway aplicó V7 correctamente; health, Route, UI, filtro individual, Downtime,
+Incidentes y exportación ZIP respondieron correctamente y el pod quedó `1/1`
+sin reinicios. `0.7.3` es el rollback inmediato de aplicación; sus binarios
+ignoran las tablas aditivas de V7, que se conservan salvo reversión física
+expresamente autorizada.
 
 ## Decisiones de la beta
 

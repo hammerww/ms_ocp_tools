@@ -2,6 +2,7 @@ package com.ocptools.external;
 
 import com.ocptools.config.ToolsConfig;
 import com.ocptools.external.ExternalModels.CredentialInput;
+import com.ocptools.external.ExternalModels.ArchivedServiceView;
 import com.ocptools.external.ExternalModels.CredentialSecret;
 import com.ocptools.external.ExternalModels.CredentialView;
 import com.ocptools.external.ExternalModels.GroupView;
@@ -69,18 +70,25 @@ public class ExternalRepository {
     }
 
     public HistoryView history(ExternalHistoryRange range, Long serviceId) {
+        return history(range, serviceId, null);
+    }
+
+    public HistoryView history(ExternalHistoryRange range, Long serviceId, Long groupId) {
         try (Connection connection = dataSource.getConnection()) {
             return new HistoryView(Instant.now(), range.hours(), range.from(), range.to(), range.bucketSeconds(),
-                    serviceId, loadHistorySummary(connection, range.from(), range.to(), serviceId),
-                    loadServiceHistory(connection, range.from(), range.to(), serviceId),
-                    loadHistoryTimeline(connection, range.from(), range.to(), serviceId, range.sqlBucket()));
+                    serviceId, loadHistorySummary(connection, range.from(), range.to(), serviceId, groupId),
+                    loadServiceHistory(connection, range.from(), range.to(), serviceId, groupId),
+                    loadHistoryTimeline(connection, range.from(), range.to(), serviceId, groupId, range.sqlBucket()));
         } catch (SQLException exception) {
             throw unavailable(exception);
         }
     }
 
     public List<HistoryExecutionView> historyExecutions(ExternalHistoryRange range, Long serviceId) {
-        String servicePredicate = serviceId == null ? "" : " AND s.id=?";
+        return historyExecutions(range, serviceId, null);
+    }
+
+    public List<HistoryExecutionView> historyExecutions(ExternalHistoryRange range, Long serviceId, Long groupId) {
         String sql = """
                 SELECT r.id, s.id service_id, s.name service_name, s.environment, s.system_name,
                        r.started_at, r.finished_at, r.status, r.duration_ms, r.trigger_source
@@ -88,12 +96,16 @@ public class ExternalRepository {
                 JOIN external_service s ON s.id=r.service_id
                 WHERE r.manual=FALSE AND r.status <> 'RUNNING'
                   AND r.finished_at >= ? AND r.finished_at < ? AND s.archived_at IS NULL
-                """ + servicePredicate + " ORDER BY r.started_at, s.name";
+                  AND s.id=COALESCE(?, s.id)
+                  AND COALESCE(s.group_id, 0)=COALESCE(?, COALESCE(s.group_id, 0))
+                ORDER BY r.started_at, s.name
+                """;
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setTimestamp(1, Timestamp.from(range.from()));
             statement.setTimestamp(2, Timestamp.from(range.to()));
-            if (serviceId != null) statement.setLong(3, serviceId);
+            setLong(statement, 3, serviceId);
+            setLong(statement, 4, groupId);
             try (ResultSet rows = statement.executeQuery()) {
                 List<HistoryExecutionView> result = new ArrayList<>();
                 while (rows.next()) {
@@ -257,6 +269,35 @@ public class ExternalRepository {
 
     public void archiveService(long id) {
         executeArchive("external_service", id);
+    }
+
+    public List<ArchivedServiceView> archivedServices() {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT id, group_id, name, environment, system_name, archived_at
+                     FROM external_service WHERE archived_at IS NOT NULL ORDER BY archived_at DESC, name
+                     """); ResultSet rows = statement.executeQuery()) {
+            List<ArchivedServiceView> result = new ArrayList<>();
+            while (rows.next()) result.add(new ArchivedServiceView(rows.getLong("id"),
+                    nullableLong(rows, "group_id"), rows.getString("name"), rows.getString("environment"),
+                    rows.getString("system_name"), instant(rows, "archived_at")));
+            return result;
+        } catch (SQLException exception) {
+            throw unavailable(exception);
+        }
+    }
+
+    public void restoreService(long id) {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     UPDATE external_service SET archived_at=NULL, status='UNKNOWN', consecutive_failures=0,
+                         updated_at=CURRENT_TIMESTAMP WHERE id=? AND archived_at IS NOT NULL
+                     """)) {
+            statement.setLong(1, id);
+            if (statement.executeUpdate() == 0) throw new IllegalArgumentException("Servicio archivado no encontrado");
+        } catch (SQLException exception) {
+            throw unavailable(exception);
+        }
     }
 
     public List<ServiceDefinition> activeServiceDefinitions() {
@@ -525,9 +566,9 @@ public class ExternalRepository {
         return new Summary(total, up, warning, down, unknown, availability24h, availability7d, p95, incidents);
     }
 
-    private static HistorySummary loadHistorySummary(Connection connection, Instant from, Instant to, Long serviceId)
+    private static HistorySummary loadHistorySummary(Connection connection, Instant from, Instant to, Long serviceId,
+                                                     Long groupId)
             throws SQLException {
-        String servicePredicate = serviceId == null ? "" : " AND s.id=?";
         String sql = """
                 SELECT COUNT(*) executions,
                        100.0 * COUNT(*) FILTER (WHERE r.status IN ('UP','WARNING'))
@@ -539,12 +580,14 @@ public class ExternalRepository {
                 FROM external_run r
                 JOIN external_service s ON s.id=r.service_id
                 WHERE r.manual=FALSE AND r.status <> 'RUNNING' AND r.finished_at >= ? AND r.finished_at < ?
-                  AND s.archived_at IS NULL
-                """ + servicePredicate;
+                  AND s.archived_at IS NULL AND s.id=COALESCE(?, s.id)
+                  AND COALESCE(s.group_id, 0)=COALESCE(?, COALESCE(s.group_id, 0))
+                """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setTimestamp(1, Timestamp.from(from));
             statement.setTimestamp(2, Timestamp.from(to));
-            if (serviceId != null) statement.setLong(3, serviceId);
+            setLong(statement, 3, serviceId);
+            setLong(statement, 4, groupId);
             try (ResultSet rows = statement.executeQuery()) {
                 rows.next();
                 return new HistorySummary(rows.getLong("executions"), nullableDouble(rows, "availability"),
@@ -555,9 +598,8 @@ public class ExternalRepository {
     }
 
     private static List<ServiceHistoryView> loadServiceHistory(Connection connection, Instant from, Instant to,
-                                                                Long serviceId)
+                                                                Long serviceId, Long groupId)
             throws SQLException {
-        String servicePredicate = serviceId == null ? "" : " AND s.id=?";
         String sql = """
                 SELECT s.id, s.name, s.environment, s.system_name,
                        COUNT(*) executions,
@@ -572,15 +614,16 @@ public class ExternalRepository {
                 FROM external_run r
                 JOIN external_service s ON s.id=r.service_id
                 WHERE r.manual=FALSE AND r.status <> 'RUNNING' AND r.finished_at >= ? AND r.finished_at < ?
-                  AND s.archived_at IS NULL
-                """ + servicePredicate + """
+                  AND s.archived_at IS NULL AND s.id=COALESCE(?, s.id)
+                  AND COALESCE(s.group_id, 0)=COALESCE(?, COALESCE(s.group_id, 0))
                 GROUP BY s.id, s.name, s.environment, s.system_name
                 ORDER BY downs DESC, warnings DESC, s.name
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setTimestamp(1, Timestamp.from(from));
             statement.setTimestamp(2, Timestamp.from(to));
-            if (serviceId != null) statement.setLong(3, serviceId);
+            setLong(statement, 3, serviceId);
+            setLong(statement, 4, groupId);
             try (ResultSet rows = statement.executeQuery()) {
                 List<ServiceHistoryView> result = new ArrayList<>();
                 while (rows.next()) {
@@ -598,8 +641,7 @@ public class ExternalRepository {
     }
 
     private static List<HistoryPointView> loadHistoryTimeline(Connection connection, Instant from, Instant to,
-                                                               Long serviceId, String bucket) throws SQLException {
-        String servicePredicate = serviceId == null ? "" : " AND s.id=?";
+                                                               Long serviceId, Long groupId, String bucket) throws SQLException {
         String sql = """
                 SELECT s.id, s.name,
                        date_bin(INTERVAL '%s', r.started_at,
@@ -613,15 +655,16 @@ public class ExternalRepository {
                 FROM external_run r
                 JOIN external_service s ON s.id=r.service_id
                 WHERE r.manual=FALSE AND r.status <> 'RUNNING' AND r.finished_at >= ? AND r.finished_at < ?
-                  AND s.archived_at IS NULL
-                %s
+                  AND s.archived_at IS NULL AND s.id=COALESCE(?, s.id)
+                  AND COALESCE(s.group_id, 0)=COALESCE(?, COALESCE(s.group_id, 0))
                 GROUP BY s.id, s.name, bucket
                 ORDER BY bucket, s.name
-                """.formatted(bucket, servicePredicate);
+                """.formatted(bucket);
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setTimestamp(1, Timestamp.from(from));
             statement.setTimestamp(2, Timestamp.from(to));
-            if (serviceId != null) statement.setLong(3, serviceId);
+            setLong(statement, 3, serviceId);
+            setLong(statement, 4, groupId);
             try (ResultSet rows = statement.executeQuery()) {
                 List<HistoryPointView> result = new ArrayList<>();
                 while (rows.next()) {

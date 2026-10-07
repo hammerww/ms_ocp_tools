@@ -5,6 +5,7 @@ import com.ocptools.external.ExternalModels;
 import com.ocptools.external.ExternalMonitorService;
 import com.ocptools.external.ExternalHistoryExportService;
 import com.ocptools.external.ExternalHistoryRange;
+import com.ocptools.external.ExternalDowntimeService;
 import com.ocptools.external.ExternalRepository;
 import com.ocptools.external.ExternalUnavailableException;
 import com.ocptools.external.KdbxExportService;
@@ -38,6 +39,7 @@ public class ExternalServicesResource {
     @Inject ExternalAdminSessions sessions;
     @Inject ExternalMonitorService monitor;
     @Inject ExternalHistoryExportService historyExport;
+    @Inject ExternalDowntimeService downtime;
     @Inject KdbxExportService kdbx;
     @Inject OcpMapLifecycle lifecycle;
 
@@ -48,6 +50,7 @@ public class ExternalServicesResource {
         try {
             return Response.ok(repository.snapshot()).header("Cache-Control", "no-store").build();
         } catch (ExternalUnavailableException exception) {
+            LOG.error("No se pudo consultar el snapshot de servicios externos", exception);
             return unavailable();
         }
     }
@@ -55,14 +58,50 @@ public class ExternalServicesResource {
     @GET
     @Path("/history")
     public Response history(@QueryParam("hours") Integer hours, @QueryParam("from") String from,
-                            @QueryParam("to") String to, @QueryParam("serviceId") Long serviceId) {
+                            @QueryParam("to") String to, @QueryParam("serviceId") Long serviceId,
+                            @QueryParam("groupId") Long groupId) {
         if (!lifecycle.isDatabaseReady()) return unavailable();
         try {
-            return Response.ok(repository.history(ExternalHistoryRange.resolve(hours, from, to), serviceId))
+            return Response.ok(repository.history(ExternalHistoryRange.resolve(hours, from, to), serviceId, groupId))
                     .header("Cache-Control", "no-store").build();
         } catch (IllegalArgumentException exception) {
             return error(Response.Status.BAD_REQUEST, exception.getMessage());
         } catch (ExternalUnavailableException exception) {
+            LOG.error("No se pudo consultar el historial de servicios externos", exception);
+            return unavailable();
+        }
+    }
+
+    @GET
+    @Path("/downtime")
+    public Response downtime(@QueryParam("hours") Integer hours, @QueryParam("from") String from,
+                             @QueryParam("to") String to, @QueryParam("serviceId") Long serviceId,
+                             @QueryParam("groupId") Long groupId) {
+        if (!lifecycle.isDatabaseReady()) return unavailable();
+        try {
+            return Response.ok(downtime.downtime(ExternalHistoryRange.resolve(hours, from, to), serviceId, groupId))
+                    .header("Cache-Control", "no-store").build();
+        } catch (IllegalArgumentException exception) {
+            return error(Response.Status.BAD_REQUEST, exception.getMessage());
+        } catch (ExternalUnavailableException exception) {
+            LOG.error("No se pudo calcular el downtime de servicios externos", exception);
+            return unavailable();
+        }
+    }
+
+    @GET
+    @Path("/incidents")
+    public Response incidents(@QueryParam("hours") Integer hours, @QueryParam("from") String from,
+                              @QueryParam("to") String to, @QueryParam("serviceId") Long serviceId,
+                              @QueryParam("groupId") Long groupId) {
+        if (!lifecycle.isDatabaseReady()) return unavailable();
+        try {
+            return Response.ok(downtime.incidents(ExternalHistoryRange.resolve(hours, from, to), serviceId, groupId))
+                    .header("Cache-Control", "no-store").build();
+        } catch (IllegalArgumentException exception) {
+            return error(Response.Status.BAD_REQUEST, exception.getMessage());
+        } catch (ExternalUnavailableException exception) {
+            LOG.error("No se pudieron consultar los incidentes externos", exception);
             return unavailable();
         }
     }
@@ -71,10 +110,11 @@ public class ExternalServicesResource {
     @Path("/history/export.zip")
     @Produces("application/zip")
     public Response exportHistory(@QueryParam("hours") Integer hours, @QueryParam("from") String from,
-                                  @QueryParam("to") String to, @QueryParam("serviceId") Long serviceId) {
+                                  @QueryParam("to") String to, @QueryParam("serviceId") Long serviceId,
+                                  @QueryParam("groupId") Long groupId) {
         if (!lifecycle.isDatabaseReady()) return unavailable();
         try {
-            var payload = historyExport.export(ExternalHistoryRange.resolve(hours, from, to), serviceId);
+            var payload = historyExport.export(ExternalHistoryRange.resolve(hours, from, to), serviceId, groupId);
             LOG.infof("tool=external-monitor action=export-kpi result=success bytes=%d", payload.bytes().length);
             return Response.ok(payload.bytes()).type("application/zip").header("Content-Disposition",
                             "attachment; filename=\"" + payload.filename() + "\"")
@@ -82,6 +122,7 @@ public class ExternalServicesResource {
         } catch (IllegalArgumentException exception) {
             return error(Response.Status.BAD_REQUEST, exception.getMessage());
         } catch (ExternalUnavailableException exception) {
+            LOG.error("No se pudo exportar el historial de servicios externos", exception);
             return unavailable();
         }
     }
@@ -162,6 +203,60 @@ public class ExternalServicesResource {
         return secured(token, () -> { repository.archiveService(id); return Response.noContent().build(); });
     }
 
+    @GET
+    @Path("/admin/services/archived")
+    public Response archivedServices(@HeaderParam(ADMIN_HEADER) String token) {
+        return secured(token, () -> Response.ok(repository.archivedServices())
+                .header("Cache-Control", "no-store").build());
+    }
+
+    @POST
+    @Path("/admin/services/{id}/restore")
+    public Response restoreService(@HeaderParam(ADMIN_HEADER) String token, @PathParam("id") long id) {
+        return secured(token, () -> { repository.restoreService(id); return Response.noContent().build(); });
+    }
+
+    @GET
+    @Path("/admin/schedules")
+    public Response schedules(@HeaderParam(ADMIN_HEADER) String token) {
+        return secured(token, () -> Response.ok(downtime.schedules()).header("Cache-Control", "no-store").build());
+    }
+
+    @POST
+    @Path("/admin/schedules")
+    public Response createSchedule(@HeaderParam(ADMIN_HEADER) String token,
+                                   ExternalModels.AvailabilityScheduleInput input) {
+        return secured(token, () -> Response.status(Response.Status.CREATED)
+                .entity(Map.of("id", downtime.saveSchedule(null, input))).build());
+    }
+
+    @PUT
+    @Path("/admin/schedules/{id}")
+    public Response updateSchedule(@HeaderParam(ADMIN_HEADER) String token, @PathParam("id") long id,
+                                   ExternalModels.AvailabilityScheduleInput input) {
+        return secured(token, () -> Response.ok(Map.of("id", downtime.saveSchedule(id, input))).build());
+    }
+
+    @POST
+    @Path("/admin/schedules/{id}/archive")
+    public Response archiveSchedule(@HeaderParam(ADMIN_HEADER) String token, @PathParam("id") long id) {
+        return secured(token, () -> { downtime.archiveSchedule(id); return Response.noContent().build(); });
+    }
+
+    @POST
+    @Path("/admin/incidents/{id}/classifications")
+    public Response classifyIncident(@HeaderParam(ADMIN_HEADER) String token, @PathParam("id") long id,
+                                     ExternalModels.IncidentClassificationInput input) {
+        return secured(token, () -> Response.status(Response.Status.CREATED)
+                .entity(Map.of("id", downtime.classify(id, input))).build());
+    }
+
+    @POST
+    @Path("/admin/incidents/classifications/{id}/archive")
+    public Response archiveClassification(@HeaderParam(ADMIN_HEADER) String token, @PathParam("id") long id) {
+        return secured(token, () -> { downtime.archiveClassification(id); return Response.noContent().build(); });
+    }
+
     @POST
     @Path("/admin/services/{id}/run")
     public Response manualRun(@HeaderParam(ADMIN_HEADER) String token, @PathParam("id") long id) {
@@ -204,6 +299,7 @@ public class ExternalServicesResource {
         } catch (IllegalArgumentException exception) {
             return error(Response.Status.BAD_REQUEST, exception.getMessage());
         } catch (ExternalUnavailableException exception) {
+            LOG.error("Falló una operación protegida de servicios externos", exception);
             return unavailable();
         } catch (IllegalStateException exception) {
             return error(Response.Status.SERVICE_UNAVAILABLE, exception.getMessage());

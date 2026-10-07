@@ -405,11 +405,20 @@ tcpForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!tcpForm.reportValidity()) return;
     setTcpBusy(true, 'Validando desde el pod…');
+    const controller = new AbortController();
+    const clientTimeoutMs = 12_000;
+    const startedAt = Date.now();
+    const progress = setInterval(() => {
+        const elapsed = Math.min(12, Math.floor((Date.now() - startedAt) / 1000));
+        tcpRequestState.textContent = `Validando desde el pod… ${elapsed} s de 12 s`;
+    }, 1000);
+    const timeout = setTimeout(() => controller.abort(), clientTimeoutMs);
     try {
         const response = await fetch('/api/v1/tcp-check', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ ip: tcpIpInput.value.trim(), port: Number(tcpPortInput.value) })
+            body: JSON.stringify({ ip: tcpIpInput.value.trim(), port: Number(tcpPortInput.value) }),
+            signal: controller.signal
         });
         const result = await response.json().catch(() => {
             throw new Error(`El servidor devolvió HTTP ${response.status} sin una respuesta válida.`);
@@ -417,8 +426,12 @@ tcpForm.addEventListener('submit', async (event) => {
         if (!response.ok && !result.status) throw new Error(result.message || `Error HTTP ${response.status}`);
         renderTcpResult(result);
     } catch (error) {
-        renderTcpResult({ status: 'ERROR', message: `No fue posible comunicarse con OCP Tools: ${error.message}`, ip: tcpIpInput.value.trim(), port: tcpPortInput.value });
+        const message = error.name === 'AbortError'
+            ? 'La validación fue cancelada al superar 12 segundos. El formulario quedó liberado para reintentar.'
+            : `No fue posible comunicarse con OCP Tools: ${error.message}`;
+        renderTcpResult({ status: error.name === 'AbortError' ? 'TIMEOUT' : 'ERROR', message, ip: tcpIpInput.value.trim(), port: tcpPortInput.value, timeoutSeconds: 12, durationMs: Date.now() - startedAt, checkedAt: new Date().toISOString() });
     } finally {
+        clearTimeout(timeout); clearInterval(progress);
         setTcpBusy(false, '');
     }
 });

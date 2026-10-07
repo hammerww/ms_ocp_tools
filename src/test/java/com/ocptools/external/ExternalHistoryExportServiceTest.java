@@ -4,6 +4,10 @@ import com.ocptools.external.ExternalModels.HistoryExecutionView;
 import com.ocptools.external.ExternalModels.HistorySummary;
 import com.ocptools.external.ExternalModels.HistoryView;
 import com.ocptools.external.ExternalModels.ServiceHistoryView;
+import com.ocptools.external.ExternalModels.DowntimeSummary;
+import com.ocptools.external.ExternalModels.DowntimeSegmentView;
+import com.ocptools.external.ExternalModels.DowntimeView;
+import com.ocptools.external.ExternalModels.ServiceDowntimeView;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -20,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExternalHistoryExportServiceTest {
     @Test
-    void exportsSummaryAndRawExecutionsInOneZip() throws Exception {
+    void exportsSensingAndDowntimeFilesInOneZip() throws Exception {
         Instant from = Instant.parse("2026-09-01T05:00:00Z");
         Instant to = Instant.parse("2026-09-02T05:00:00Z");
         ExternalHistoryRange range = ExternalHistoryRange.custom(from, to);
@@ -33,14 +37,25 @@ class ExternalHistoryExportServiceTest {
 
         ExternalHistoryExportService exporter = new ExternalHistoryExportService();
         exporter.repository = new StubRepository(history, List.of(execution));
+        var segment = new DowntimeSegmentView(31, from.plusSeconds(3_600), from.plusSeconds(7_200),
+                3_600, "UNPLANNED", "RECOVERED", null, "INC-10", "Proveedor", "Interrupción");
+        var serviceDowntime = new ServiceDowntimeView(7, 2L, "Proveedor crítico", "Equivalencias",
+                "Testing", "EQV", "America/Lima", "08:00–19:00 · America/Lima", 3_600, 0,
+                List.of(segment));
+        exporter.downtimeService = new StubDowntimeService(new DowntimeView(to, from, to, null, 2L,
+                new DowntimeSummary(1, 3_600, 0), List.of(serviceDowntime)));
         ExternalHistoryExportService.ExportPayload payload = exporter.export(range, null);
 
         Map<String, String> files = unzip(payload.bytes());
-        assertEquals(2, files.size());
+        assertEquals(4, files.size());
         assertTrue(files.get("resumen.csv").contains("Equivalencias"));
         assertTrue(files.get("resumen.csv").contains("America/Lima"));
         assertTrue(files.get("ejecuciones.csv").contains("SCHEDULER"));
         assertTrue(files.get("ejecuciones.csv").contains("\"21\""));
+        assertTrue(files.get("downtime-resumen.csv").contains("total_down_horas"));
+        assertTrue(files.get("downtime-resumen.csv").contains("Proveedor crítico"));
+        assertTrue(files.get("downtime-detalle.csv").contains("clasificacion"));
+        assertTrue(files.get("downtime-detalle.csv").contains("INC-10"));
     }
 
     private static Map<String, String> unzip(byte[] payload) throws Exception {
@@ -64,8 +79,18 @@ class ExternalHistoryExportServiceTest {
         }
 
         @Override public HistoryView history(ExternalHistoryRange range, Long serviceId) { return history; }
+        @Override public HistoryView history(ExternalHistoryRange range, Long serviceId, Long groupId) { return history; }
         @Override public List<HistoryExecutionView> historyExecutions(ExternalHistoryRange range, Long serviceId) {
             return executions;
         }
+        @Override public List<HistoryExecutionView> historyExecutions(ExternalHistoryRange range, Long serviceId, Long groupId) {
+            return executions;
+        }
+    }
+
+    private static final class StubDowntimeService extends ExternalDowntimeService {
+        private final DowntimeView view;
+        private StubDowntimeService(DowntimeView view) { this.view = view; }
+        @Override public DowntimeView downtime(ExternalHistoryRange range, Long serviceId, Long groupId) { return view; }
     }
 }

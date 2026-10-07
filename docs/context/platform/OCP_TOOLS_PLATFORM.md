@@ -169,6 +169,10 @@ Cada entrega debe incluir:
   HTTP del monitor con conexiones independientes, un reintento de timeout,
   diagnóstico por fase y código HTTP visible. No agrega migraciones y su
   rollback inmediato es `0.7.2`.
+- `0.8.0`: desplegada y operativa; incorpora Sensado, Downtime e Incidentes,
+  horarios laborables, justificaciones parciales o totales, desarchivado,
+  reporte ZIP y timeout cliente para la utilidad TCP. Flyway quedó en V7 y su
+  rollback inmediato de aplicación es `0.7.3`.
 - Los tags publicados deben ser inmutables.
 - No sobrescribir `0.1.0` ni desacoplar el rollback de imagen de su ConfigMap
   compatible.

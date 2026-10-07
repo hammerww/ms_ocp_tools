@@ -1,12 +1,12 @@
 # Infraestructura vigente — OCP Tools
 
-Fecha de evidencia: 2026-09-26
+Fecha de evidencia: 2026-10-06
 
 ## Plataforma desplegada
 
 ```text
 Aplicación:       ms-ocp-tools
-Versión desplegada: 0.7.3
+Versión desplegada: 0.8.0
 Cluster:          https://api.ocpnprod7.gp.inet:6443
 Proyecto:         testing-pmx3
 ImageStream:      ms-ocp-tools
@@ -28,20 +28,19 @@ de validar el clúster el usuario debe ejecutar el login interactivo.
 
 ## Evidencia de imagen
 
-El digest efectivo de `0.7.3`, verificado durante el rollout del 2026-09-26,
+El digest efectivo de `0.8.0`, verificado durante el rollout del 2026-10-06,
 es:
 
 ```text
 image-registry.openshift-image-registry.svc:5000/
-  testing-pmx3/ms-ocp-tools@sha256:e30565fd54fed7809f6b02e9ba5dfe20f4a087dc0c4f379c34a8157abb1e1bd7
+  testing-pmx3/ms-ocp-tools@sha256:7930e311d25c8ca2c98867850cc0d708a9f11fb0c93a7b3ed3fbf2fb3d82b6c9
 ```
 
-La revisión del Deployment es 21. El pod quedó `1/1 Ready`, sin reinicios, y
-Flyway confirmó V1–V6 sin migraciones pendientes. El ConfigMap conserva
-`EXTERNAL_MONITOR_ENABLED=true`, intervalo de 10 minutos y paralelismo 1. El
-primer ciclo de `0.7.3` procesó 30 servicios en 35,613 ms: 27 `UP` y 3 `DOWN`
-según sus destinos, con un reintento de timeout y sin errores de aplicación.
-Health, Route, UI y API pública respondieron HTTP 200.
+El pod quedó `1/1 Ready`, sin reinicios, y Flyway aplicó y validó V1–V7. El
+ConfigMap conserva `EXTERNAL_MONITOR_ENABLED=true`, intervalo de 10 minutos y
+paralelismo 1. El arranque detectó 39 servicios activos. Health, Route, UI,
+snapshot, filtro individual, Downtime, Incidentes y exportación ZIP fueron
+validados correctamente.
 
 Respaldo postimportación verificado:
 
