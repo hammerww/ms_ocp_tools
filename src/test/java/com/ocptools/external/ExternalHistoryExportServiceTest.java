@@ -6,6 +6,7 @@ import com.ocptools.external.ExternalModels.HistoryView;
 import com.ocptools.external.ExternalModels.ServiceHistoryView;
 import com.ocptools.external.ExternalModels.DowntimeSummary;
 import com.ocptools.external.ExternalModels.DowntimeSegmentView;
+import com.ocptools.external.ExternalModels.AvailabilityWindowView;
 import com.ocptools.external.ExternalModels.DowntimeView;
 import com.ocptools.external.ExternalModels.ServiceDowntimeView;
 import org.junit.jupiter.api.Test;
@@ -40,8 +41,8 @@ class ExternalHistoryExportServiceTest {
         var segment = new DowntimeSegmentView(31, from.plusSeconds(3_600), from.plusSeconds(7_200),
                 3_600, "UNPLANNED", "RECOVERED", null, "INC-10", "Proveedor", "Interrupción");
         var serviceDowntime = new ServiceDowntimeView(7, 2L, "Proveedor crítico", "Equivalencias",
-                "Testing", "EQV", "America/Lima", "08:00–19:00 · America/Lima", 3_600, 0,
-                List.of(segment));
+                "Testing", "EQV", "America/Lima", "L–V · 08:00–19:00 · America/Lima",
+                List.of(new AvailabilityWindowView(from, to)), 3_600, 0, List.of(segment));
         exporter.downtimeService = new StubDowntimeService(new DowntimeView(to, from, to, null, 2L,
                 new DowntimeSummary(1, 3_600, 0), List.of(serviceDowntime)));
         ExternalHistoryExportService.ExportPayload payload = exporter.export(range, null);

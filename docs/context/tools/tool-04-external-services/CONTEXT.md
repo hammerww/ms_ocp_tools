@@ -1,8 +1,8 @@
 # Herramienta 04 — Servicios externos
 
-Fecha de vigencia: 2026-10-06
-Estado desplegado: `0.8.0` operativa en `testing-pmx3`
-Estado del código: `0.8.0`
+Fecha de vigencia: 2026-10-07
+Estado desplegado: `0.8.1` operativa en `testing-pmx3`
+Estado del código: `0.8.1`
 
 ## Objetivo
 
@@ -278,6 +278,48 @@ La cabecera operativa además calcula:
 Los conteos son por servicio. Las ejecuciones manuales se excluyen de
 disponibilidad, p95, rachas e incidentes.
 
+## Evolución 0.8.1 desplegada
+
+Esta entrega estabiliza la consulta histórica sin cambiar sus reglas de
+cálculo:
+
+- conserva durante 60 segundos cada respuesta por recurso, rango y filtro;
+- al cambiar entre `Sensado`, `Downtime` e `Incidentes`, reutiliza la información
+  vigente y solo consulta el recurso que falte;
+- cancela solicitudes obsoletas, descarta respuestas fuera de orden y aplica un
+  límite cliente de 20 segundos;
+- mantiene los datos visibles durante una actualización y, ante un error,
+  presenta una acción de reintento en vez de dejar una carga indefinida;
+- aplica 15 segundos como límite por consulta SQL histórica y registra tiempos
+  separados para resumen, servicios, línea temporal, horarios, incidentes,
+  clasificaciones y agregación;
+- Flyway V8 agrega índices parciales orientados a `external_run.finished_at` y a
+  incidentes confirmados por rango. La reversión solo elimina esos índices y no
+  borra información funcional.
+
+La vista `Downtime`:
+
+- muestra inicialmente servicios con `Total down > 0` o `Justificado > 0`,
+  informa la relación visible/total y permite recuperar los servicios sin
+  interrupciones;
+- presenta una sola vez el horario cuando es común y conserva el detalle por fila
+  cuando los horarios son distintos;
+- reduce la altura de las filas, agrega referencias de fecha y sombrea para cada
+  servicio los intervalos que quedan fuera de sus ventanas laborales efectivas,
+  incluidas las excepciones configuradas;
+- escribe la duración dentro de una barra solo cuando supera una hora y el ancho
+  real permite leerla. El detalle emergente y los totales permanecen disponibles
+  cuando la etiqueta se oculta.
+
+El código fuente y `ocp/deployment.yaml` usan la versión `0.8.1`. La imagen
+`linux/amd64` superó 51 pruebas y quedó publicada con digest
+`sha256:adf01f4812c33882f3d13cc33820984c28585303bc7e9ca63c6e14b300bc2357`.
+El rollout del 2026-10-07 dejó el pod `1/1 Ready`, sin reinicios, health `UP` y
+Flyway V8 aplicada. Las consultas completas de historial de 24 h y 7 d
+respondieron por la Route en 429 ms y 444 ms; Downtime respondió en 155 ms y
+121 ms. La validación Maven se ejecuta dentro de Docker porque el host Windows
+no tiene Maven instalado.
+
 ## Persistencia
 
 Flyway V5 agrega únicamente:
@@ -306,6 +348,11 @@ external_incident_classification
 
 También agrega índices de rango y clasificación. No modifica filas históricas
 ni elimina objetos de V1–V6.
+
+Flyway V8 de `0.8.1` agrega únicamente los índices
+`idx_external_run_scheduled_finished_service` e
+`idx_external_incident_confirmed_period`. No crea tablas ni modifica datos. Su
+rollback documentado es `scripts/rollback-external-history-v8.sql`.
 
 ## API
 
@@ -438,6 +485,22 @@ es compatible con `0.7.0`; no se eliminan tablas ni datos históricos. El texto
 técnico limpiado no se restaura porque no constituye información funcional.
 
 ## Rollback
+
+### Entregable 0.8.1
+
+El rollback normal consiste en restaurar el Deployment respaldado de `0.8.0`,
+que referencia el digest
+`sha256:7930e311d25c8ca2c98867850cc0d708a9f11fb0c93a7b3ed3fbf2fb3d82b6c9`.
+Los índices de V8 son aditivos y compatibles con `0.8.0`, por lo que se
+conservan durante el rollback normal. El respaldo previo validado es
+`release-0.8.1/backup-before-0.8.1/postgresql-before-0.8.1.dump`, con SHA-256
+`e95378538e11cae15da6ed94f6380ff3515e999fef96ed2b412b60252f195fd2`.
+
+Si se exige revertir físicamente V8, detener primero la aplicación, conservar
+un respaldo verificado, ejecutar de forma controlada
+`scripts/rollback-external-history-v8.sql` y retirar la fila V8 de
+`flyway_schema_history` únicamente si se requiere volver a aplicar la
+migración. Esa reversión no forma parte del rollback operativo recomendado.
 
 ### Entregable 0.8.0
 

@@ -68,7 +68,7 @@ public class ExternalServicesResource {
             return error(Response.Status.BAD_REQUEST, exception.getMessage());
         } catch (ExternalUnavailableException exception) {
             LOG.error("No se pudo consultar el historial de servicios externos", exception);
-            return unavailable();
+            return unavailable(exception.getMessage());
         }
     }
 
@@ -85,7 +85,7 @@ public class ExternalServicesResource {
             return error(Response.Status.BAD_REQUEST, exception.getMessage());
         } catch (ExternalUnavailableException exception) {
             LOG.error("No se pudo calcular el downtime de servicios externos", exception);
-            return unavailable();
+            return unavailable(exception.getMessage());
         }
     }
 
@@ -102,7 +102,7 @@ public class ExternalServicesResource {
             return error(Response.Status.BAD_REQUEST, exception.getMessage());
         } catch (ExternalUnavailableException exception) {
             LOG.error("No se pudieron consultar los incidentes externos", exception);
-            return unavailable();
+            return unavailable(exception.getMessage());
         }
     }
 
@@ -123,7 +123,7 @@ public class ExternalServicesResource {
             return error(Response.Status.BAD_REQUEST, exception.getMessage());
         } catch (ExternalUnavailableException exception) {
             LOG.error("No se pudo exportar el historial de servicios externos", exception);
-            return unavailable();
+            return unavailable(exception.getMessage());
         }
     }
 
@@ -308,6 +308,10 @@ public class ExternalServicesResource {
 
     private static Response unavailable() {
         return error(Response.Status.SERVICE_UNAVAILABLE, "El catálogo de servicios externos aún no está disponible");
+    }
+
+    private static Response unavailable(String message) {
+        return error(Response.Status.SERVICE_UNAVAILABLE, message);
     }
 
     private static Response error(Response.Status status, String message) {

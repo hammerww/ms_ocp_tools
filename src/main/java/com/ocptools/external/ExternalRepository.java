@@ -23,6 +23,7 @@ import com.ocptools.external.ExternalModels.Summary;
 import io.quarkus.agroal.DataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -41,6 +42,9 @@ import java.util.Map;
 
 @ApplicationScoped
 public class ExternalRepository {
+    private static final Logger LOG = Logger.getLogger(ExternalRepository.class);
+    private static final int HISTORY_QUERY_TIMEOUT_SECONDS = 15;
+
     @Inject
     @DataSource("inventory")
     javax.sql.DataSource dataSource;
@@ -75,10 +79,21 @@ public class ExternalRepository {
 
     public HistoryView history(ExternalHistoryRange range, Long serviceId, Long groupId) {
         try (Connection connection = dataSource.getConnection()) {
+            long started = System.nanoTime();
+            long phase = started;
+            HistorySummary summary = loadHistorySummary(connection, range.from(), range.to(), serviceId, groupId);
+            long summaryMs = elapsedMillis(phase); phase = System.nanoTime();
+            List<ServiceHistoryView> services = loadServiceHistory(connection, range.from(), range.to(), serviceId, groupId);
+            long servicesMs = elapsedMillis(phase); phase = System.nanoTime();
+            List<HistoryPointView> timeline = loadHistoryTimeline(connection, range.from(), range.to(), serviceId,
+                    groupId, range.sqlBucket());
+            long timelineMs = elapsedMillis(phase);
+            LOG.infof("tool=external-monitor action=history-query result=success hours=%s serviceId=%s groupId=%s "
+                            + "summaryMs=%d servicesMs=%d timelineMs=%d totalMs=%d serviceRows=%d timelineRows=%d",
+                    range.hours(), serviceId, groupId, summaryMs, servicesMs, timelineMs, elapsedMillis(started),
+                    services.size(), timeline.size());
             return new HistoryView(Instant.now(), range.hours(), range.from(), range.to(), range.bucketSeconds(),
-                    serviceId, loadHistorySummary(connection, range.from(), range.to(), serviceId, groupId),
-                    loadServiceHistory(connection, range.from(), range.to(), serviceId, groupId),
-                    loadHistoryTimeline(connection, range.from(), range.to(), serviceId, groupId, range.sqlBucket()));
+                    serviceId, summary, services, timeline);
         } catch (SQLException exception) {
             throw unavailable(exception);
         }
@@ -102,6 +117,7 @@ public class ExternalRepository {
                 """;
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
+            configureHistoryQuery(statement);
             statement.setTimestamp(1, Timestamp.from(range.from()));
             statement.setTimestamp(2, Timestamp.from(range.to()));
             setLong(statement, 3, serviceId);
@@ -584,6 +600,7 @@ public class ExternalRepository {
                   AND COALESCE(s.group_id, 0)=COALESCE(?, COALESCE(s.group_id, 0))
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            configureHistoryQuery(statement);
             statement.setTimestamp(1, Timestamp.from(from));
             statement.setTimestamp(2, Timestamp.from(to));
             setLong(statement, 3, serviceId);
@@ -620,6 +637,7 @@ public class ExternalRepository {
                 ORDER BY downs DESC, warnings DESC, s.name
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            configureHistoryQuery(statement);
             statement.setTimestamp(1, Timestamp.from(from));
             statement.setTimestamp(2, Timestamp.from(to));
             setLong(statement, 3, serviceId);
@@ -661,6 +679,7 @@ public class ExternalRepository {
                 ORDER BY bucket, s.name
                 """.formatted(bucket);
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            configureHistoryQuery(statement);
             statement.setTimestamp(1, Timestamp.from(from));
             statement.setTimestamp(2, Timestamp.from(to));
             setLong(statement, 3, serviceId);
@@ -693,6 +712,14 @@ public class ExternalRepository {
     private static Double nullableDouble(ResultSet rows, String column) throws SQLException {
         Object value = rows.getObject(column);
         return value == null ? null : Math.round(rows.getDouble(column) * 100.0) / 100.0;
+    }
+
+    private static void configureHistoryQuery(PreparedStatement statement) throws SQLException {
+        statement.setQueryTimeout(HISTORY_QUERY_TIMEOUT_SECONDS);
+    }
+
+    private static long elapsedMillis(long started) {
+        return java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
     }
 
     private static Long nullableRoundedLong(ResultSet rows, String column) throws SQLException {
@@ -1009,7 +1036,12 @@ public class ExternalRepository {
     private static String valueOrPrevious(String value, String previous) { return value == null || value.isBlank() ? previous : value; }
     private static String blankToNull(String value) { return value == null || value.isBlank() ? null : value.trim(); }
     private static String trim(String value, int max) { return value == null || value.length() <= max ? value : value.substring(0, max); }
-    private static RuntimeException unavailable(SQLException exception) { return new ExternalUnavailableException("El catálogo de servicios externos no está disponible", exception); }
+    private static RuntimeException unavailable(SQLException exception) {
+        if (exception instanceof java.sql.SQLTimeoutException || "57014".equals(exception.getSQLState())) {
+            return new ExternalUnavailableException("La consulta histórica superó el límite de 15 segundos", exception);
+        }
+        return new ExternalUnavailableException("El catálogo de servicios externos no está disponible", exception);
+    }
 
     public record ProbeDefinition(long id, Long dependsOnProbeId, Long credentialId, String name, String probeType,
                                   boolean mandatory, int displayOrder, String host, Integer port, String url,

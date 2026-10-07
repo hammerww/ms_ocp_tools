@@ -1,7 +1,13 @@
+const EXTERNAL_HISTORY_CACHE_TTL_MS = 60_000;
+const EXTERNAL_HISTORY_TIMEOUT_MS = 20_000;
+const EXTERNAL_HISTORY_CACHE_MAX_ENTRIES = 60;
+const externalHistoryCache = new Map();
 const externalState = { snapshot: null, token: null, expiresAt: 0, credentials: [], editing: null,
     history: null, historyMode: 'preset', historyHours: 24, historyFrom: null, historyTo: null,
     historyServiceId: null, historyGroupId: null, historyView: 'sensing', downtime: null, incidents: null,
-    historyLoading: false, historyError: null, historyRequest: 0, historyOpen: false,
+    historyKey: null, downtimeKey: null, incidentsKey: null,
+    historyLoading: false, historyError: null, historyRequest: 0, historyController: null, historyOpen: false,
+    downtimeShowAll: false,
     archived: [], schedules: [] };
 const extPanel = document.querySelector('#external-panel');
 const externalMessage = document.querySelector('#external-message');
@@ -15,7 +21,10 @@ const archivedDialog = document.querySelector('#external-archived-dialog');
 const scheduleDialog = document.querySelector('#external-schedule-dialog');
 const classificationDialog = document.querySelector('#external-classification-dialog');
 
-window.onExternalTabChanged = (active) => { if (active && !externalState.snapshot) loadExternalServices(); };
+window.onExternalTabChanged = (active) => {
+    if (active && !externalState.snapshot) loadExternalServices();
+    if (active) fitDowntimeLabels();
+};
 [externalSearch, externalEnvironment, externalStatus].forEach((control) =>
     control.addEventListener(control.type === 'search' ? 'input' : 'change', renderExternalServices));
 document.querySelector('#external-unlock').addEventListener('click', () => unlockDialog.showModal());
@@ -59,9 +68,14 @@ loadExternalServices();
 setInterval(() => {
     if (externalState.token && Date.now() >= externalState.expiresAt) lockExternalAdmin();
 }, 15000);
+window.addEventListener('resize', fitDowntimeLabels);
 
 window.loadExternalServices = loadExternalServices;
 async function loadExternalServices() {
+    externalState.historyController?.abort();
+    externalState.historyRequest += 1;
+    externalState.historyLoading = false;
+    invalidateExternalHistoryCache();
     setExternalMessageTone();
     externalMessage.textContent = 'Cargando servicios externos…';
     try {
@@ -73,7 +87,7 @@ async function loadExternalServices() {
         renderExternalServices();
         setExternalMessageTone(body.monitor?.tlsVerify === false ? 'warning' : 'success');
         externalMessage.textContent = externalMonitorMessage(body);
-        await loadExternalHistory();
+        await loadExternalHistory({ force: true });
     } catch (error) {
         externalState.snapshot = null;
         extPanel.innerHTML = externalEmpty('Servicios externos no disponibles');
@@ -100,8 +114,9 @@ function renderExternalServices() {
     const expanded = new Set([...extPanel.querySelectorAll('.external-service-card[open]')]
         .map((card) => Number(card.dataset.serviceId)));
     const summary = externalState.snapshot.summary;
-    const rangeSummary = externalState.history?.summary;
-    const selectedRange = externalState.history ? historyRangeLabel(externalState.history) : '24 h';
+    const currentHistory = currentExternalHistory();
+    const rangeSummary = currentHistory?.summary;
+    const selectedRange = currentHistory ? historyRangeLabel(currentHistory) : selectedHistoryRangeLabel();
     const query = normalizeExternal(externalSearch.value);
     const services = externalState.snapshot.services.filter((service) => {
         const targets = service.probes.map(probeTarget).join(' ');
@@ -121,6 +136,7 @@ function renderExternalServices() {
     <div class="panel-intro external-panel-intro"><div><h3>Servicios monitoreados</h3><p>${services.length} de ${summary.total} servicios coinciden con los filtros. ${summary.openIncidents} incidentes abiertos o por confirmar.</p></div><button class="button secondary compact-button" type="button" data-external-action="refresh">Actualizar</button></div>
     <div class="external-service-list">${services.length ? services.map(externalServiceCard).join('') : externalEmpty('No hay servicios para el filtro')}</div>`;
     expanded.forEach((id) => extPanel.querySelector(`.external-service-card[data-service-id="${id}"]`)?.setAttribute('open', ''));
+    fitDowntimeLabels();
 }
 
 function externalServiceCard(service) {
@@ -154,30 +170,76 @@ function externalServiceCard(service) {
     </details>`;
 }
 
-async function loadExternalHistory() {
+async function loadExternalHistory({ force = false } = {}) {
     if (!externalState.snapshot) return;
+    externalState.historyController?.abort();
     const request = ++externalState.historyRequest;
-    externalState.historyLoading = true;
+    const query = externalHistoryQuery();
+    const controller = new AbortController();
+    externalState.historyController = controller;
     externalState.historyError = null;
+    const resources = [{ type: 'history', key: `history:${query}`, path: `/history?${query}` }];
+    if (externalState.historyView === 'downtime') resources.push({ type: 'downtime', key: `downtime:${query}`, path: `/downtime?${query}` });
+    if (externalState.historyView === 'incidents') resources.push({ type: 'incidents', key: `incidents:${query}`, path: `/incidents?${query}` });
+    const pending = [];
+    resources.forEach((resource) => {
+        const cached = force ? null : readExternalHistoryCache(resource.key);
+        if (cached) assignExternalHistory(resource.type, query, cached);
+        else pending.push(resource);
+    });
+    if (!pending.length) {
+        externalState.historyLoading = false;
+        externalState.historyController = null;
+        renderExternalServices();
+        return;
+    }
+    externalState.historyLoading = true;
     renderExternalServices();
+    let timedOut = false;
+    const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, EXTERNAL_HISTORY_TIMEOUT_MS);
     try {
-        const requests = [externalPublicRequest(`/history?${externalHistoryQuery()}`)];
-        if (externalState.historyView === 'downtime') requests.push(externalPublicRequest(`/downtime?${externalHistoryQuery()}`));
-        if (externalState.historyView === 'incidents') requests.push(externalPublicRequest(`/incidents?${externalHistoryQuery()}`));
-        const bodies = await Promise.all(requests);
+        const bodies = await Promise.all(pending.map((resource) => externalPublicRequest(resource.path, { signal: controller.signal })));
         if (request !== externalState.historyRequest) return;
-        externalState.history = bodies[0];
-        if (externalState.historyView === 'downtime') externalState.downtime = bodies[1];
-        if (externalState.historyView === 'incidents') externalState.incidents = bodies[1];
+        pending.forEach((resource, index) => {
+            writeExternalHistoryCache(resource.key, bodies[index]);
+            assignExternalHistory(resource.type, query, bodies[index]);
+        });
     } catch (exception) {
         if (request !== externalState.historyRequest) return;
-        externalState.historyError = exception.message;
+        externalState.historyError = timedOut
+            ? `La consulta superó ${EXTERNAL_HISTORY_TIMEOUT_MS / 1000} segundos. Puedes reintentarla.`
+            : exception.name === 'AbortError' ? null : exception.message;
     } finally {
+        clearTimeout(timeout);
         if (request !== externalState.historyRequest) return;
         externalState.historyLoading = false;
+        externalState.historyController = null;
         renderExternalServices();
     }
 }
+
+function assignExternalHistory(type, query, body) {
+    externalState[type] = body;
+    externalState[`${type}Key`] = query;
+}
+
+function readExternalHistoryCache(key) {
+    const cached = externalHistoryCache.get(key);
+    if (!cached || cached.expiresAt <= Date.now()) { externalHistoryCache.delete(key); return null; }
+    return cached.body;
+}
+
+function writeExternalHistoryCache(key, body) {
+    if (!externalHistoryCache.has(key) && externalHistoryCache.size >= EXTERNAL_HISTORY_CACHE_MAX_ENTRIES) {
+        externalHistoryCache.delete(externalHistoryCache.keys().next().value);
+    }
+    externalHistoryCache.set(key, { body, expiresAt: Date.now() + EXTERNAL_HISTORY_CACHE_TTL_MS });
+}
+
+function invalidateExternalHistoryCache() { externalHistoryCache.clear(); }
+function currentExternalHistory() { return externalState.historyKey === externalHistoryQuery() ? externalState.history : null; }
+function currentExternalDowntime() { return externalState.downtimeKey === externalHistoryQuery() ? externalState.downtime : null; }
+function currentExternalIncidents() { return externalState.incidentsKey === externalHistoryQuery() ? externalState.incidents : null; }
 
 function externalHistorySection() {
     const ranges = [[1, '1 h'], [6, '6 h'], [24, '24 h'], [168, '7 d'], [720, '30 d']]
@@ -186,19 +248,27 @@ function externalHistorySection() {
         `<option value="${service.id}"${externalState.historyServiceId === service.id ? ' selected' : ''}>${externalEscape(service.name)} · ${externalEscape(service.environment)}</option>`).join('');
     const groups = externalState.snapshot.groups.map((group) =>
         `<option value="${group.id}"${externalState.historyGroupId === group.id ? ' selected' : ''}>${externalEscape(group.name)}</option>`).join('');
+    const history = currentExternalHistory();
+    const viewData = externalState.historyView === 'downtime' ? currentExternalDowntime()
+        : externalState.historyView === 'incidents' ? currentExternalIncidents() : history;
     let body = '';
-    if (externalState.historyLoading) body = '<div class="external-history-state">Calculando KPI históricos…</div>';
-    else if (externalState.historyError) body = `<div class="external-history-state error">${externalEscape(externalState.historyError)}</div>`;
-    else if (!externalState.history) body = '<div class="external-history-state">Cargando historial…</div>';
-    else if (externalState.historyView === 'downtime') body = externalDowntimeBody(externalState.downtime);
-    else if (externalState.historyView === 'incidents') body = externalIncidentsBody(externalState.incidents);
-    else body = externalHistoryBody(externalState.history);
+    if (viewData && externalState.historyView === 'downtime') body = externalDowntimeBody(viewData);
+    else if (viewData && externalState.historyView === 'incidents') body = externalIncidentsBody(viewData);
+    else if (viewData) body = externalHistoryBody(viewData);
+    else if (externalState.historyLoading) body = '<div class="external-history-state" role="status">Calculando KPI históricos…</div>';
+    else if (!history) body = '<div class="external-history-state">Cargando historial…</div>';
+    if (externalState.historyLoading && viewData) {
+        body = `<div class="external-history-notice" role="status">Actualizando datos…</div>${body}`;
+    }
+    if (externalState.historyError) {
+        body = `<div class="external-history-notice error" role="alert"><span>${externalEscape(externalState.historyError)}</span><button type="button" data-external-action="history-retry">Reintentar</button></div>${body}`;
+    }
     const custom = externalState.historyMode === 'custom' ? `<div class="external-custom-range">
         <label><span>Desde</span><input type="datetime-local" data-external-history-from value="${externalEscape(externalState.historyFrom || '')}"></label>
         <label><span>Hasta</span><input type="datetime-local" data-external-history-to value="${externalEscape(externalState.historyTo || '')}"></label>
         <button type="button" class="button secondary compact-button" data-external-action="history-custom-apply">Aplicar rango</button>
         <small>Zona horaria America/Lima · máximo 90 días.</small></div>` : '';
-    const actions = `<div class="external-history-actions">${externalState.historyOpen ? `<button type="button" class="button secondary compact-button" data-external-action="history-export"${!externalState.historyLoading && externalState.history ? '' : ' disabled'}>Exportar KPI ZIP</button>` : ''}<button type="button" class="button secondary compact-button" data-external-action="history-toggle">${externalState.historyOpen ? 'Ocultar detalle' : 'Ver historial'}</button></div>`;
+    const actions = `<div class="external-history-actions">${externalState.historyOpen ? `<button type="button" class="button secondary compact-button" data-external-action="history-export"${!externalState.historyLoading && history ? '' : ' disabled'}>Exportar KPI ZIP</button>` : ''}<button type="button" class="button secondary compact-button" data-external-action="history-toggle">${externalState.historyOpen ? 'Ocultar detalle' : 'Ver historial'}</button></div>`;
     return `<section class="external-history${externalState.historyOpen ? ' open' : ''}">
         <div class="external-history-heading"><div><h3>Historial y KPI</h3><p>Disponibilidad, latencia y estados de las ejecuciones programadas.</p></div>${actions}</div>
         ${externalState.historyOpen ? `<div class="external-history-views" role="tablist"><button type="button" class="${externalState.historyView === 'sensing' ? 'active' : ''}" data-external-action="history-view" data-view="sensing">Sensado</button><button type="button" class="${externalState.historyView === 'downtime' ? 'active' : ''}" data-external-action="history-view" data-view="downtime">Downtime</button><button type="button" class="${externalState.historyView === 'incidents' ? 'active' : ''}" data-external-action="history-view" data-view="incidents">Incidentes</button></div><div class="external-history-controls"><div class="external-history-ranges">${ranges}<button type="button" class="${externalState.historyMode === 'custom' ? 'active' : ''}" data-external-action="history-custom">Personalizado</button></div><select data-external-history-group aria-label="Filtrar historial por grupo"><option value="">Todos los grupos</option>${groups}</select><select data-external-history-service aria-label="Filtrar historial por servicio"><option value="">Todos los servicios</option>${services}</select></div>${custom}${body}` : ''}
@@ -244,23 +314,88 @@ function externalHistoryBody(history) {
 function externalDowntimeBody(view) {
     if (!view) return '<div class="external-history-state">Cargando downtime…</div>';
     const from = Date.parse(view.from); const to = Date.parse(view.to); const span = Math.max(1, to - from);
-    const rows = (view.services || []).map((service) => {
+    const services = view.services || [];
+    const activeServices = services.filter((service) => Number(service.totalDownSeconds) > 0
+        || Number(service.justifiedSeconds) > 0 || service.segments?.length);
+    const visibleServices = externalState.downtimeShowAll ? services : activeServices;
+    const schedules = [...new Set(services.map((service) => service.scheduleLabel).filter(Boolean))];
+    const commonSchedule = schedules.length === 1 ? schedules[0] : null;
+    const calendar = externalDowntimeCalendar(view, services[0]?.timezone || 'America/Lima');
+    const rows = visibleServices.map((service) => {
+        const nonWorkingBands = externalNonWorkingBands(view, service.workingWindows, service.timezone)
+            .map((band) => `<i class="downtime-nonworking" style="left:${band.left}%;width:${band.width}%" aria-hidden="true"></i>`).join('');
         const segments = service.segments.map((segment) => {
             const left = Math.max(0, (Date.parse(segment.from) - from) * 100 / span);
             const width = Math.max(.35, (Date.parse(segment.to) - Date.parse(segment.from)) * 100 / span);
             const label = segment.durationSeconds > 3600 ? compactHours(segment.durationSeconds) : '';
             const tone = segment.category === 'JUSTIFIED' ? 'justified' : 'unplanned';
             const attributes = segment.category === 'JUSTIFIED' ? '' : ` data-external-action="classify-incident" data-incident-id="${segment.incidentId}" data-from="${externalEscape(segment.from)}" data-to="${externalEscape(segment.to)}"`;
-            return `<button type="button" class="downtime-segment ${tone}" style="left:${left}%;width:${Math.min(width, 100 - left)}%"${attributes} title="${externalEscape(service.serviceName)} · ${externalDateTime(segment.from)} a ${externalDateTime(segment.to)} · ${compactDuration(segment.durationSeconds)}${segment.ticketReference ? ` · ${externalEscape(segment.ticketReference)}` : ''}">${label}</button>`;
+            const accessible = `${service.serviceName} · ${externalDateTime(segment.from)} a ${externalDateTime(segment.to)} · ${compactDuration(segment.durationSeconds)}${segment.ticketReference ? ` · ${segment.ticketReference}` : ''}`;
+            return `<button type="button" class="downtime-segment ${tone}" style="left:${left}%;width:${Math.min(width, 100 - left)}%"${attributes}${label ? ` data-downtime-label="${externalEscape(label)}"` : ''} title="${externalEscape(accessible)}" aria-label="${externalEscape(accessible)}">${externalEscape(label)}</button>`;
         }).join('');
-        return `<div class="downtime-row"><div><strong title="${externalEscape(service.serviceName)}">${externalEscape(service.serviceName)}</strong><small>${externalEscape(service.scheduleLabel)}</small></div><div class="downtime-track">${segments}</div><strong class="downtime-total down">${compactDuration(service.totalDownSeconds)}</strong><strong class="downtime-total justified">${compactDuration(service.justifiedSeconds)}</strong></div>`;
+        const schedule = commonSchedule ? '' : `<small title="Horario aplicado">${externalEscape(service.scheduleLabel)}</small>`;
+        return `<div class="downtime-row"><div><strong title="${externalEscape(service.serviceName)}">${externalEscape(service.serviceName)}</strong>${schedule}</div><div class="downtime-track">${nonWorkingBands}${segments}</div><strong class="downtime-total down">${compactDuration(service.totalDownSeconds)}</strong><strong class="downtime-total justified">${compactDuration(service.justifiedSeconds)}</strong></div>`;
     }).join('');
+    const axis = calendar.labels.map((label) => `<span style="left:${label.left}%">${externalEscape(label.text)}</span>`).join('');
+    const visibility = `<div class="downtime-visibility"><span>Mostrando ${visibleServices.length} de ${services.length} servicios${externalState.downtimeShowAll ? '' : ' con interrupciones'}</span>${activeServices.length < services.length ? `<button type="button" data-external-action="downtime-toggle-empty">${externalState.downtimeShowAll ? 'Ocultar servicios sin interrupciones' : 'Mostrar también servicios sin interrupciones'}</button>` : ''}</div>`;
     return `<div class="external-history-kpis downtime-kpis">
         ${kpi('Incidentes', view.summary.incidents, 'confirmados en horario laboral')}
         ${kpi('Total down', compactDuration(view.summary.totalDownSeconds), 'indisponibilidad imputable', 'down')}
         ${kpi('Justificado', compactDuration(view.summary.justifiedSeconds), 'reinicios o trabajos aprobados', 'justified')}
     </div><div class="downtime-legend"><span><i class="unplanned"></i> Indisponibilidad imputable</span><span><i class="justified"></i> Reinicio solicitado / trabajo aprobado</span><small>Precisión determinada por el intervalo de sensado programado.</small></div>
-    <div class="downtime-chart"><div class="downtime-row downtime-header"><strong>Servicio</strong><span>Intervalos dentro del horario laboral</span><strong>Total down</strong><strong>Justificado</strong></div>${rows || externalEmpty('No hay servicios para el filtro')}</div>`;
+    ${commonSchedule ? `<div class="downtime-common-schedule"><strong>Horario aplicado:</strong> ${externalEscape(commonSchedule)}</div>` : ''}${visibility}
+    <div class="downtime-chart"><div class="downtime-row downtime-header"><strong>Servicio</strong><div class="downtime-axis" aria-label="Eje temporal">${axis}</div><strong>Total down</strong><strong>Justificado</strong></div>${rows || '<div class="downtime-empty">No hubo interrupciones en el rango y filtro seleccionados.</div>'}</div>`;
+}
+
+function externalDowntimeCalendar(view, timezone) {
+    const from = Date.parse(view.from); const to = Date.parse(view.to); const span = Math.max(1, to - from);
+    const hours = span / 3_600_000;
+    const ticks = Math.min(8, Math.max(2, Math.ceil(hours / 24) + 1));
+    const labelFormat = new Intl.DateTimeFormat('es-PE', hours <= 48
+        ? { timeZone: timezone, weekday: 'short', hour: '2-digit', minute: '2-digit' }
+        : { timeZone: timezone, weekday: 'short', day: '2-digit', month: '2-digit' });
+    const labels = Array.from({ length: ticks }, (_, index) => {
+        const at = from + span * index / (ticks - 1);
+        return { left: index * 100 / (ticks - 1), text: labelFormat.format(new Date(at)) };
+    });
+    const weekday = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' });
+    const weekends = [];
+    const hour = 3_600_000;
+    let cursor = from; let open = null;
+    while (cursor < to) {
+        const next = Math.min(to, cursor + hour);
+        const day = weekday.format(new Date(cursor + (next - cursor) / 2));
+        const isWeekend = day === 'Sat' || day === 'Sun';
+        if (isWeekend && open == null) open = cursor;
+        if (!isWeekend && open != null) { weekends.push({ from: open, to: cursor }); open = null; }
+        cursor = next;
+    }
+    if (open != null) weekends.push({ from: open, to });
+    return { labels, weekends: weekends.map((item) => ({
+        left: Math.max(0, (item.from - from) * 100 / span), width: Math.max(0, (item.to - item.from) * 100 / span)
+    })) };
+}
+
+function externalNonWorkingBands(view, workingWindows, timezone) {
+    if (!Array.isArray(workingWindows)) return externalDowntimeCalendar(view, timezone || 'America/Lima').weekends;
+    const from = Date.parse(view.from); const to = Date.parse(view.to); const span = Math.max(1, to - from);
+    const windows = workingWindows.map((window) => ({
+        from: Math.max(from, Date.parse(window.from)), to: Math.min(to, Date.parse(window.to))
+    })).filter((window) => window.from < window.to).sort((left, right) => left.from - right.from);
+    const gaps = []; let cursor = from;
+    windows.forEach((window) => {
+        if (window.from > cursor) gaps.push({ from: cursor, to: window.from });
+        cursor = Math.max(cursor, window.to);
+    });
+    if (cursor < to) gaps.push({ from: cursor, to });
+    return gaps.map((gap) => ({ left: (gap.from - from) * 100 / span, width: (gap.to - gap.from) * 100 / span }));
+}
+
+function fitDowntimeLabels() {
+    requestAnimationFrame(() => extPanel.querySelectorAll('[data-downtime-label]').forEach((segment) => {
+        segment.textContent = segment.dataset.downtimeLabel;
+        if (segment.clientWidth < 36 || segment.scrollWidth > segment.clientWidth) segment.textContent = '';
+    }));
 }
 
 function externalIncidentsBody(incidents) {
@@ -332,12 +467,18 @@ async function handleExternalAction(event) {
     if (action.dataset.externalAction === 'history-toggle') {
         externalState.historyOpen = !externalState.historyOpen;
         renderExternalServices();
-        if (externalState.historyOpen && !externalState.history) loadExternalHistory();
+        if (externalState.historyOpen && !currentExternalHistory()) loadExternalHistory();
         return;
     }
+    if (action.dataset.externalAction === 'history-retry') return loadExternalHistory({ force: true });
     if (action.dataset.externalAction === 'history-view') {
         externalState.historyView = action.dataset.view;
         return loadExternalHistory();
+    }
+    if (action.dataset.externalAction === 'downtime-toggle-empty') {
+        externalState.downtimeShowAll = !externalState.downtimeShowAll;
+        renderExternalServices();
+        return;
     }
     if (action.dataset.externalAction === 'history-range') {
         externalState.historyMode = 'preset';
@@ -368,7 +509,11 @@ async function handleExternalAction(event) {
     if (action.dataset.externalAction === 'archive-classification') {
         if (!externalUnlocked()) return unlockDialog.showModal();
         if (!confirm('¿Retirar esta justificación? La evidencia de sensado se conservará.')) return;
-        try { await externalRequest(`/admin/incidents/classifications/${action.dataset.classificationId}/archive`, { method: 'POST' }); await loadExternalHistory(); }
+        try {
+            await externalRequest(`/admin/incidents/classifications/${action.dataset.classificationId}/archive`, { method: 'POST' });
+            invalidateExternalHistoryCache();
+            await loadExternalHistory({ force: true });
+        }
         catch (exception) { alert(exception.message); }
         return;
     }
@@ -663,13 +808,19 @@ async function saveSchedule(event) {
     try {
         await externalRequest(id ? `/admin/schedules/${id}` : '/admin/schedules', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
         externalState.schedules = await externalRequest('/admin/schedules'); renderScheduleList(); resetScheduleForm();
-        if (externalState.historyView === 'downtime') loadExternalHistory();
+        invalidateExternalHistoryCache();
+        if (externalState.historyView === 'downtime') loadExternalHistory({ force: true });
     } catch (exception) { document.querySelector('#external-schedule-error').textContent = exception.message; }
 }
 
 async function archiveSchedule(schedule) {
     if (!confirm(`¿Archivar el horario ${schedule.name}?`)) return;
-    try { await externalRequest(`/admin/schedules/${schedule.id}/archive`, { method: 'POST' }); externalState.schedules = await externalRequest('/admin/schedules'); renderScheduleList(); resetScheduleForm(); }
+    try {
+        await externalRequest(`/admin/schedules/${schedule.id}/archive`, { method: 'POST' });
+        externalState.schedules = await externalRequest('/admin/schedules');
+        renderScheduleList(); resetScheduleForm(); invalidateExternalHistoryCache();
+        if (externalState.historyView === 'downtime') await loadExternalHistory({ force: true });
+    }
     catch (exception) { alert(exception.message); }
 }
 
@@ -688,7 +839,12 @@ async function saveIncidentClassification(event) {
         from: new Date(value('#classification-from')).toISOString(), to: new Date(value('#classification-to')).toISOString(),
         ticketReference: value('#classification-ticket') || null, requestedBy: value('#classification-requester') || null,
         confirmedBy: value('#classification-confirmed-by'), notes: value('#classification-notes') || null };
-    try { await externalRequest(`/admin/incidents/${incidentId}/classifications`, { method: 'POST', body: JSON.stringify(payload) }); classificationDialog.close(); await loadExternalHistory(); }
+    try {
+        await externalRequest(`/admin/incidents/${incidentId}/classifications`, { method: 'POST', body: JSON.stringify(payload) });
+        classificationDialog.close();
+        invalidateExternalHistoryCache();
+        await loadExternalHistory({ force: true });
+    }
     catch (exception) { document.querySelector('#external-classification-error').textContent = exception.message; }
 }
 
@@ -711,8 +867,10 @@ async function externalRequest(path, options = {}) {
     return body;
 }
 
-async function externalPublicRequest(path) {
-    const response = await fetch(`/api/v1/external-services${path}`, { headers: { Accept: 'application/json' } });
+async function externalPublicRequest(path, options = {}) {
+    const response = await fetch(`/api/v1/external-services${path}`, {
+        ...options, headers: { Accept: 'application/json', ...(options.headers || {}) }
+    });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(body.message || `HTTP ${response.status}`);
     return body;
@@ -756,6 +914,11 @@ function externalMonitorMessage(snapshot) {
 function formatInterval(seconds) { if (seconds % 3600 === 0) return `${seconds / 3600} h`; if (seconds % 60 === 0) return `${seconds / 60} min`; return `${seconds} s`; }
 function rangeLabel(hours) { return hours < 24 ? `${hours} h` : hours === 24 ? '24 h' : `${hours / 24} d`; }
 function historyRangeLabel(history) { return history?.hours ? rangeLabel(history.hours) : `${new Date(history.from).toLocaleDateString('es-PE')} – ${new Date(history.to).toLocaleDateString('es-PE')}`; }
+function selectedHistoryRangeLabel() {
+    if (externalState.historyMode === 'preset') return rangeLabel(externalState.historyHours);
+    if (!externalState.historyFrom || !externalState.historyTo) return 'personalizada';
+    return `${new Date(externalState.historyFrom).toLocaleDateString('es-PE')} – ${new Date(externalState.historyTo).toLocaleDateString('es-PE')}`;
+}
 function initializeCustomHistoryRange() {
     const to = new Date(); const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
     externalState.historyFrom = localDateTimeValue(from); externalState.historyTo = localDateTimeValue(to);

@@ -2,6 +2,7 @@ package com.ocptools.external;
 
 import com.ocptools.external.ExternalModels.AvailabilityScheduleInput;
 import com.ocptools.external.ExternalModels.AvailabilityScheduleView;
+import com.ocptools.external.ExternalModels.AvailabilityWindowView;
 import com.ocptools.external.ExternalModels.DowntimeSegmentView;
 import com.ocptools.external.ExternalModels.DowntimeSummary;
 import com.ocptools.external.ExternalModels.DowntimeView;
@@ -13,6 +14,7 @@ import com.ocptools.external.ExternalModels.ServiceDowntimeView;
 import io.quarkus.agroal.DataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -39,6 +41,8 @@ import java.util.Set;
 
 @ApplicationScoped
 public class ExternalDowntimeService {
+    private static final Logger LOG = Logger.getLogger(ExternalDowntimeService.class);
+    private static final int HISTORY_QUERY_TIMEOUT_SECONDS = 15;
     private static final ZoneId DEFAULT_ZONE = ZoneId.of("America/Lima");
     private static final List<Integer> DEFAULT_DAYS = List.of(1, 2, 3, 4, 5);
     private static final LocalTime DEFAULT_START = LocalTime.of(8, 0);
@@ -50,12 +54,18 @@ public class ExternalDowntimeService {
 
     public DowntimeView downtime(ExternalHistoryRange range, Long serviceId, Long groupId) {
         try (Connection connection = dataSource.getConnection()) {
+            long started = System.nanoTime();
+            long phase = started;
             List<ServiceRow> services = loadServices(connection, serviceId, groupId);
+            long servicesMs = elapsedMillis(phase); phase = System.nanoTime();
             Map<Long, ScheduleRow> serviceSchedules = new HashMap<>();
             Map<Long, ScheduleRow> groupSchedules = new HashMap<>();
             loadSchedules(connection, serviceSchedules, groupSchedules);
+            long schedulesMs = elapsedMillis(phase); phase = System.nanoTime();
             Map<Long, List<IncidentRow>> incidents = loadIncidents(connection, range, serviceId, groupId, true);
+            long incidentsMs = elapsedMillis(phase); phase = System.nanoTime();
             Map<Long, List<ClassificationRow>> classifications = loadClassifications(connection, incidents);
+            long classificationsMs = elapsedMillis(phase); phase = System.nanoTime();
             List<ServiceDowntimeView> result = new ArrayList<>();
             Set<Long> incidentIds = new HashSet<>();
             long totalDown = 0;
@@ -78,9 +88,17 @@ public class ExternalDowntimeService {
                 totalDown += down;
                 totalJustified += justified;
                 result.add(new ServiceDowntimeView(service.id, service.groupId, service.groupName, service.name,
-                        service.environment, service.systemName, schedule.zone.getId(), schedule.label(), down,
-                        justified, segments));
+                        service.environment, service.systemName, schedule.zone.getId(), schedule.label(),
+                        windows(range, schedule), down, justified, segments));
             }
+            long aggregationMs = elapsedMillis(phase);
+            long incidentRows = incidents.values().stream().mapToLong(List::size).sum();
+            LOG.infof("tool=external-monitor action=downtime-query result=success hours=%s serviceId=%s groupId=%s "
+                            + "servicesMs=%d schedulesMs=%d incidentsMs=%d classificationsMs=%d aggregationMs=%d "
+                            + "totalMs=%d serviceRows=%d incidentRows=%d segmentRows=%d",
+                    range.hours(), serviceId, groupId, servicesMs, schedulesMs, incidentsMs, classificationsMs,
+                    aggregationMs, elapsedMillis(started), services.size(), incidentRows,
+                    result.stream().mapToLong(item -> item.segments().size()).sum());
             return new DowntimeView(Instant.now(), range.from(), range.to(), serviceId, groupId,
                     new DowntimeSummary(incidentIds.size(), totalDown, totalJustified), result);
         } catch (SQLException exception) {
@@ -90,15 +108,20 @@ public class ExternalDowntimeService {
 
     public List<IncidentView> incidents(ExternalHistoryRange range, Long serviceId, Long groupId) {
         try (Connection connection = dataSource.getConnection()) {
+            long started = System.nanoTime();
             Map<Long, List<IncidentRow>> grouped = loadIncidents(connection, range, serviceId, groupId, false);
             Map<Long, List<ClassificationRow>> classifications = loadClassifications(connection, grouped);
-            return grouped.values().stream().flatMap(List::stream)
+            List<IncidentView> result = grouped.values().stream().flatMap(List::stream)
                     .sorted(Comparator.comparing(IncidentRow::openedAt).reversed())
                     .map(row -> new IncidentView(row.id, row.serviceId, row.serviceName, row.environment,
                             row.systemName, row.openedAt, row.confirmedAt, row.recoveredAt, row.status,
                             classifications.getOrDefault(row.id, List.of()).stream()
                                     .map(ClassificationRow::view).toList()))
                     .toList();
+            LOG.infof("tool=external-monitor action=incidents-query result=success hours=%s serviceId=%s "
+                            + "groupId=%s totalMs=%d incidentRows=%d",
+                    range.hours(), serviceId, groupId, elapsedMillis(started), result.size());
+            return result;
         } catch (SQLException exception) {
             throw unavailable(exception);
         }
@@ -261,6 +284,20 @@ public class ExternalDowntimeService {
         return result;
     }
 
+    static List<AvailabilityWindowView> windows(ExternalHistoryRange range, ScheduleRow schedule) {
+        List<AvailabilityWindowView> result = new ArrayList<>();
+        LocalDate first = range.from().atZone(schedule.zone).toLocalDate();
+        LocalDate last = range.to().minusNanos(1).atZone(schedule.zone).toLocalDate();
+        for (LocalDate date = first; !date.isAfter(last); date = date.plusDays(1)) {
+            TimeWindow window = schedule.window(date);
+            if (window == null) continue;
+            Instant from = later(range.from(), date.atTime(window.start).atZone(schedule.zone).toInstant());
+            Instant to = earlier(range.to(), date.atTime(window.end).atZone(schedule.zone).toInstant());
+            if (from.isBefore(to)) result.add(new AvailabilityWindowView(from, to));
+        }
+        return result;
+    }
+
     private static List<DowntimeSegmentView> merge(List<DowntimeSegmentView> source) {
         List<DowntimeSegmentView> sorted = source.stream().sorted(Comparator.comparing(DowntimeSegmentView::from)).toList();
         List<DowntimeSegmentView> result = new ArrayList<>();
@@ -290,6 +327,7 @@ public class ExternalDowntimeService {
                   AND COALESCE(s.group_id, 0)=COALESCE(?, COALESCE(s.group_id, 0))
                 ORDER BY s.name
                 """)) {
+            configureHistoryQuery(statement);
             setLong(statement, 1, serviceId);
             setLong(statement, 2, groupId);
             try (ResultSet rows = statement.executeQuery()) {
@@ -314,6 +352,7 @@ public class ExternalDowntimeService {
                   AND s.id=COALESCE(?, s.id)
                   AND COALESCE(s.group_id, 0)=COALESCE(?, COALESCE(s.group_id, 0))
                 """ + confirmed + " ORDER BY i.opened_at")) {
+            configureHistoryQuery(statement);
             statement.setTimestamp(1, Timestamp.from(range.to()));
             statement.setTimestamp(2, Timestamp.from(range.to()));
             statement.setTimestamp(3, Timestamp.from(range.from()));
@@ -346,6 +385,7 @@ public class ExternalDowntimeService {
                 FROM external_incident_classification WHERE archived_at IS NULL AND incident_id IN (%s)
                 ORDER BY from_at
                 """.formatted(placeholders))) {
+            configureHistoryQuery(statement);
             int index = 1;
             for (Long id : ids) statement.setLong(index++, id);
             try (ResultSet rows = statement.executeQuery()) {
@@ -372,13 +412,16 @@ public class ExternalDowntimeService {
                 LEFT JOIN external_service s ON s.id=a.service_id
                 LEFT JOIN external_group g ON g.id=a.group_id
                 WHERE a.archived_at IS NULL ORDER BY a.id
-                """); ResultSet rows = statement.executeQuery()) {
-            while (rows.next()) {
-                long id = rows.getLong("id");
-                builders.put(id, new ScheduleRowBuilder(id, nullableLong(rows, "group_id"),
-                        nullableLong(rows, "service_id"), rows.getString("scope_name"), rows.getString("name"),
-                        ZoneId.of(rows.getString("timezone")), parseDays(rows.getString("working_days")),
-                        rows.getTime("start_time").toLocalTime(), rows.getTime("end_time").toLocalTime()));
+                """)) {
+            configureHistoryQuery(statement);
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    long id = rows.getLong("id");
+                    builders.put(id, new ScheduleRowBuilder(id, nullableLong(rows, "group_id"),
+                            nullableLong(rows, "service_id"), rows.getString("scope_name"), rows.getString("name"),
+                            ZoneId.of(rows.getString("timezone")), parseDays(rows.getString("working_days")),
+                            rows.getTime("start_time").toLocalTime(), rows.getTime("end_time").toLocalTime()));
+                }
             }
         }
         if (!builders.isEmpty()) {
@@ -387,6 +430,7 @@ public class ExternalDowntimeService {
                     SELECT schedule_id, exception_date, available, start_time, end_time, description
                     FROM external_schedule_exception WHERE schedule_id IN (%s) ORDER BY exception_date
                     """.formatted(placeholders))) {
+                configureHistoryQuery(statement);
                 int index = 1;
                 for (Long id : builders.keySet()) statement.setLong(index++, id);
                 try (ResultSet rows = statement.executeQuery()) {
@@ -515,7 +559,16 @@ public class ExternalDowntimeService {
     private static String blank(String value) { return value == null || value.isBlank() ? null : value.trim(); }
     private static Instant later(Instant first, Instant second) { return first.isAfter(second) ? first : second; }
     private static Instant earlier(Instant first, Instant second) { return first.isBefore(second) ? first : second; }
+    private static void configureHistoryQuery(PreparedStatement statement) throws SQLException {
+        statement.setQueryTimeout(HISTORY_QUERY_TIMEOUT_SECONDS);
+    }
+    private static long elapsedMillis(long started) {
+        return java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+    }
     private static RuntimeException unavailable(SQLException exception) {
+        if (exception instanceof java.sql.SQLTimeoutException || "57014".equals(exception.getSQLState())) {
+            return new ExternalUnavailableException("La consulta histórica superó el límite de 15 segundos", exception);
+        }
         return new ExternalUnavailableException("El catálogo de servicios externos no está disponible", exception);
     }
 
@@ -543,7 +596,14 @@ public class ExternalDowntimeService {
             return new ScheduleRow(0, null, null, "Predeterminado", "Horario laboral predeterminado", DEFAULT_ZONE,
                     DEFAULT_DAYS, DEFAULT_START, DEFAULT_END, List.of());
         }
-        String label() { return start + "–" + end + " · " + zone.getId(); }
+        String label() { return daysLabel() + " · " + start + "–" + end + " · " + zone.getId(); }
+        String daysLabel() {
+            if (workingDays.equals(List.of(1, 2, 3, 4, 5))) return "L–V";
+            if (workingDays.equals(List.of(1, 2, 3, 4, 5, 6, 7))) return "L–D";
+            List<String> names = List.of("L", "M", "X", "J", "V", "S", "D");
+            return workingDays.stream().sorted().map(day -> names.get(day - 1))
+                    .collect(java.util.stream.Collectors.joining(","));
+        }
         TimeWindow window(LocalDate date) {
             ScheduleExceptionInput exception = exceptions.stream().filter(item -> date.equals(item.date())).findFirst().orElse(null);
             if (exception != null) return exception.available() ? new TimeWindow(exception.startTime(), exception.endTime()) : null;

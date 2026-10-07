@@ -952,6 +952,56 @@ Validación completada el 6 de octubre de 2026:
 - UI, snapshot, filtro individual, Downtime, Incidentes y ZIP validados por la
   Route.
 
+## 13.6. Entrega `0.8.1` — estabilidad de KPI y densidad de Downtime
+
+Esta entrega quedó desplegada el 2026-10-07. El orden validado fue:
+
+1. confirmar que `pom.xml` y el Deployment identifican el entregable como
+   `0.8.1`;
+2. ejecutar `node --check` sobre `external.js` y la batería Maven completa en
+   el target Docker de pruebas; fueron exitosas 51 pruebas;
+3. confirmar que el artefacto contiene
+   `V8__external_history_query_indexes.sql`;
+4. generar y verificar el respaldo habitual de PostgreSQL, Deployment y
+   ConfigMap;
+5. construir la imagen `linux/amd64`, conservar su TAR y publicar el tag nuevo
+   sin sobrescribir versiones anteriores;
+6. validar el manifiesto contra el API, aplicar el Deployment y esperar el
+   rollout;
+7. comparar consultas de 24 horas y 7 días usando los tiempos
+   `history-query`, `downtime-query` e `incidents-query` registrados por la
+   aplicación;
+8. validar en UI el cambio repetido entre hojas y filtros, el timeout con
+   reintento, la ocultación de servicios sin interrupciones, horarios mixtos y
+   excepciones de fin de semana.
+
+Evidencia de la publicación:
+
+```text
+Imagen: testing-pmx3/ms-ocp-tools:0.8.1
+Digest: sha256:adf01f4812c33882f3d13cc33820984c28585303bc7e9ca63c6e14b300bc2357
+Pod: ms-ocp-tools-79d986678f-xcw77, 1/1 Ready, 0 reinicios
+Health: UP
+Flyway: V8 aplicada; 8 migraciones validadas
+Monitor: activo, intervalo 600 s, paralelismo 1, 44 servicios
+Primer ciclo programado: completado en 7078 ms
+Historial 24 h / 7 d por Route: 429 ms / 444 ms
+Downtime 24 h / 7 d por Route: 155 ms / 121 ms
+```
+
+El respaldo PostgreSQL previo se conserva en
+`release-0.8.1/backup-before-0.8.1/postgresql-before-0.8.1.dump`, con SHA-256
+`e95378538e11cae15da6ed94f6380ff3515e999fef96ed2b412b60252f195fd2`. La copia
+de la imagen está en `release-0.8.1/ms-ocp-tools-0.8.1.tar`, con SHA-256
+`09a6d33c7e54db9cf51a36cc134962b746d348b96dc7405f30cbc7783b25e786`.
+
+Flyway V8 no modifica datos: crea índices parciales para ejecuciones programadas
+por `finished_at` e incidentes confirmados por rango. El rollback normal consiste
+en restaurar imagen, Deployment y ConfigMap de `0.8.0`; los índices pueden
+permanecer porque son compatibles. Si se exige su reversión física, ejecutar de
+forma controlada `scripts/rollback-external-history-v8.sql` y retirar la fila V8
+de `flyway_schema_history` solo si se necesita volver a aplicarla.
+
 ## 14. Criterio de finalización
 
 Una versión queda desplegada cuando se cumple todo lo siguiente:

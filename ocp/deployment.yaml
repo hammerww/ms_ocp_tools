@@ -25,7 +25,7 @@ spec:
       containers:
         - name: ms-ocp-tools
           # El servidor publica por la Route externa; los pods consumen por el registry interno.
-          image: image-registry.openshift-image-registry.svc:5000/testing-pmx3/ms-ocp-tools:0.8.0
+          image: image-registry.openshift-image-registry.svc:5000/testing-pmx3/ms-ocp-tools:0.8.1
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

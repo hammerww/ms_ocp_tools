@@ -173,6 +173,11 @@ Cada entrega debe incluir:
   horarios laborables, justificaciones parciales o totales, desarchivado,
   reporte ZIP y timeout cliente para la utilidad TCP. Flyway quedó en V7 y su
   rollback inmediato de aplicación es `0.7.3`.
+- `0.8.1`: desplegada y operativa desde el 2026-10-07; agrega caché y
+  cancelación para las consultas KPI, límites de tiempo explícitos, índices
+  Flyway V8 y una vista Downtime compacta con periodos no laborables visibles.
+  La imagen efectiva y el manifiesto de OpenShift apuntan a `0.8.1`; `0.8.0`
+  es el rollback inmediato de aplicación.
 - Los tags publicados deben ser inmutables.
 - No sobrescribir `0.1.0` ni desacoplar el rollback de imagen de su ConfigMap
   compatible.

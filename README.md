@@ -18,19 +18,17 @@ El procedimiento manual completo para construir, transportar, publicar,
 desplegar, validar y revertir una versión se encuentra en
 [`docs/context/infrastructure/MANUAL_DESPLIEGUE.md`](docs/context/infrastructure/MANUAL_DESPLIEGUE.md).
 
-La versión `0.8.0` está desplegada y operativa en `testing-pmx3`. Mantiene el
-monitor cada 10 minutos con paralelismo 1 y agrega las hojas `Sensado`,
-`Downtime` e `Incidentes`, horarios laborables, clasificación de
-indisponibilidades, desarchivado, reportes ZIP y cancelación visible de la
-utilidad TCP. Su contrato completo está en
+La versión `0.8.1` está desplegada y operativa en `testing-pmx3`. Mantiene el
+monitor cada 10 minutos con paralelismo 1, estabiliza las consultas históricas
+con caché, cancelación y límites de tiempo, y compacta la vista `Downtime` sin
+cambiar sus reglas de cálculo. Su contrato completo está en
 [`docs/context/tools/tool-04-external-services/CONTEXT.md`](docs/context/tools/tool-04-external-services/CONTEXT.md).
-La imagen Linux `amd64` superó 49 pruebas y se publicó con digest
-`sha256:7930e311d25c8ca2c98867850cc0d708a9f11fb0c93a7b3ed3fbf2fb3d82b6c9`.
-Flyway aplicó V7 correctamente; health, Route, UI, filtro individual, Downtime,
-Incidentes y exportación ZIP respondieron correctamente y el pod quedó `1/1`
-sin reinicios. `0.7.3` es el rollback inmediato de aplicación; sus binarios
-ignoran las tablas aditivas de V7, que se conservan salvo reversión física
-expresamente autorizada.
+La imagen Linux `amd64` superó 51 pruebas y se publicó con digest
+`sha256:adf01f4812c33882f3d13cc33820984c28585303bc7e9ca63c6e14b300bc2357`.
+El 2026-10-07 Flyway aplicó V8 correctamente, health respondió `UP`, las
+consultas completas de 24 horas y 7 días respondieron por la Route y el pod
+quedó `1/1` sin reinicios. `0.8.0` es el rollback inmediato de aplicación; los
+dos índices aditivos de V8 pueden conservarse sin pérdida de datos.
 
 ## Decisiones de la beta
 

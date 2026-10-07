@@ -53,15 +53,15 @@ que no aparezcan confirmados en estos documentos.
 
 ## Estado resumido
 
-- `ms-ocp-tools:0.8.0` está desplegado y operativo en `testing-pmx3`; Flyway V7
-  quedó aplicada, el pod está `1/1 Ready` sin reinicios y health, UI, filtros,
-  Downtime, Incidentes y ZIP respondieron correctamente. La imagen superó 49
-  pruebas y ejecuta el digest
-  `sha256:7930e311d25c8ca2c98867850cc0d708a9f11fb0c93a7b3ed3fbf2fb3d82b6c9`.
+- `ms-ocp-tools:0.8.1` está desplegado y operativo en `testing-pmx3`; Flyway V8
+  quedó aplicada, el pod está `1/1 Ready` sin reinicios y health, historial y
+  Downtime de 24 horas y 7 días respondieron correctamente. La imagen superó
+  51 pruebas y ejecuta el digest
+  `sha256:adf01f4812c33882f3d13cc33820984c28585303bc7e9ca63c6e14b300bc2357`.
   El monitor continúa activo cada 10 minutos con paralelismo 1.
-- `0.7.3`, con su imagen y manifiestos conservados, es el rollback funcional
-  inmediato. Sus binarios ignoran las tablas aditivas de V7, que no se eliminan
-  durante el rollback normal.
+- `0.8.0`, con su imagen y manifiestos conservados, es el rollback funcional
+  inmediato. Sus binarios son compatibles con los dos índices aditivos de V8,
+  que no se eliminan durante el rollback normal.
 - La Herramienta 01 debe conservarse operativa y sin regresiones.
 - La Herramienta 02 funciona con PostgreSQL persistente, sensor OCP, API y UI;
   el ServiceAccount confirmó lectura y ausencia de permisos modificatorios.

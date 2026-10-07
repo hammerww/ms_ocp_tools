@@ -283,9 +283,16 @@ public final class ExternalModels {
             String systemName,
             String timezone,
             String scheduleLabel,
+            List<AvailabilityWindowView> workingWindows,
             long totalDownSeconds,
             long justifiedSeconds,
             List<DowntimeSegmentView> segments
+    ) {
+    }
+
+    public record AvailabilityWindowView(
+            Instant from,
+            Instant to
     ) {
     }
 

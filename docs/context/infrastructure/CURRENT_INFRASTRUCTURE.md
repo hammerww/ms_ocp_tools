@@ -1,12 +1,12 @@
 # Infraestructura vigente — OCP Tools
 
-Fecha de evidencia: 2026-10-06
+Fecha de evidencia: 2026-10-07
 
 ## Plataforma desplegada
 
 ```text
 Aplicación:       ms-ocp-tools
-Versión desplegada: 0.8.0
+Versión desplegada: 0.8.1
 Cluster:          https://api.ocpnprod7.gp.inet:6443
 Proyecto:         testing-pmx3
 ImageStream:      ms-ocp-tools
@@ -28,19 +28,33 @@ de validar el clúster el usuario debe ejecutar el login interactivo.
 
 ## Evidencia de imagen
 
-El digest efectivo de `0.8.0`, verificado durante el rollout del 2026-10-06,
+El digest efectivo de `0.8.1`, verificado durante el rollout del 2026-10-07,
 es:
 
 ```text
 image-registry.openshift-image-registry.svc:5000/
-  testing-pmx3/ms-ocp-tools@sha256:7930e311d25c8ca2c98867850cc0d708a9f11fb0c93a7b3ed3fbf2fb3d82b6c9
+  testing-pmx3/ms-ocp-tools@sha256:adf01f4812c33882f3d13cc33820984c28585303bc7e9ca63c6e14b300bc2357
 ```
 
-El pod quedó `1/1 Ready`, sin reinicios, y Flyway aplicó y validó V1–V7. El
+El pod `ms-ocp-tools-79d986678f-xcw77` quedó `1/1 Ready`, sin reinicios, y
+Flyway aplicó y validó V1–V8. V8 creó los índices
+`idx_external_run_scheduled_finished_service` e
+`idx_external_incident_confirmed_period`; no modifica información funcional. El
 ConfigMap conserva `EXTERNAL_MONITOR_ENABLED=true`, intervalo de 10 minutos y
-paralelismo 1. El arranque detectó 39 servicios activos. Health, Route, UI,
-snapshot, filtro individual, Downtime, Incidentes y exportación ZIP fueron
-validados correctamente.
+paralelismo 1. El arranque detectó 44 servicios activos. Health respondió `UP`
+por la Route. Snapshot confirmó intervalo de 600 segundos y paralelismo 1. Las
+44 comprobaciones del primer ciclo programado terminaron en 7.078 segundos. Las
+consultas completas observadas respondieron así: historial 24 h en 429 ms,
+Downtime 24 h en 155 ms, historial 7 d en 444 ms y Downtime 7 d en 121 ms.
+La telemetría interna registró 197/318 ms para historial y 11/7 ms para
+Downtime, sin errores.
+
+Respaldo previo a `0.8.1` verificado:
+
+```text
+release-0.8.1/backup-before-0.8.1/postgresql-before-0.8.1.dump
+SHA-256: e95378538e11cae15da6ed94f6380ff3515e999fef96ed2b412b60252f195fd2
+```
 
 Respaldo postimportación verificado:
 
